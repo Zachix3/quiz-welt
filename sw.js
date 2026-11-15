@@ -1,15 +1,20 @@
 
 /* =========================================
-   SERVICE WORKER – QUIZ-WELT
+   QUIZ-WELT PWA-CACHE
+   Russisch hinzugefügt
    ========================================= */
 
-const CACHE_NAME = "quiz-welt-v3";
+const CACHE_NAME = "quiz-welt-v4";
 
 
-// Lokale Dateien speichern
 const DATEIEN = [
     "./",
     "./index.html",
+
+    // NEUE RUSSISCH-SEITE
+    "./russisch.html",
+
+    // CSS UND APP-DATEIEN
     "./style.css",
     "./mobile.css",
     "./manifest.webmanifest",
@@ -17,6 +22,7 @@ const DATEIEN = [
     "./icons/icon-192.png",
     "./icons/icon-512.png",
 
+    // POKÉMON UND ONE PIECE
     "./js/daten.js",
     "./js/onepiece-daten.js",
     "./js/onepiece-episoden.js",
@@ -24,8 +30,6 @@ const DATEIEN = [
 
     "./js/hilfe.js",
     "./js/timer.js",
-
-    // NEU
     "./js/vorschlaege.js",
 
     "./js/modi-namen.js",
@@ -33,39 +37,46 @@ const DATEIEN = [
     "./js/modi-attacken.js",
     "./js/modi-vergleich.js",
     "./js/onepiece-spiele.js",
-    "./js/app.js"
+    "./js/app.js",
+
+    // NEU: RUSSISCH-DATEN UND SPIELLOGIK
+    "./js/russisch-daten.js",
+    "./js/russisch-spiele.js"
 ];
 
 
 // =========================================
-// DATEIEN VORAB SPEICHERN
+// 1. APP-DATEIEN SPEICHERN
 // =========================================
 
 self.addEventListener("install", event => {
 
     event.waitUntil(
 
-        caches.open(CACHE_NAME).then(cache => {
+        caches.open(CACHE_NAME)
 
-            return cache.addAll(DATEIEN);
-        })
+            .then(cache =>
+                cache.addAll(DATEIEN)
+            )
+
+            .then(() =>
+                self.skipWaiting()
+            )
     );
-
-    self.skipWaiting();
 });
 
 
 // =========================================
-// ALTE CACHE-VERSIONEN ENTFERNEN
+// 2. ALTE CACHE-VERSIONEN ENTFERNEN
 // =========================================
 
 self.addEventListener("activate", event => {
 
     event.waitUntil(
 
-        caches.keys().then(namen => {
+        caches.keys()
 
-            return Promise.all(
+            .then(namen => Promise.all(
 
                 namen
 
@@ -76,17 +87,20 @@ self.addEventListener("activate", event => {
                         name !== CACHE_NAME
                     )
 
-                    .map(name => caches.delete(name))
-            );
-        })
-    );
+                    .map(name =>
+                        caches.delete(name)
+                    )
+            ))
 
-    self.clients.claim();
+            .then(() =>
+                self.clients.claim()
+            )
+    );
 });
 
 
 // =========================================
-// DATEIEN LADEN
+// 3. DATEIEN LADEN
 // =========================================
 
 self.addEventListener("fetch", event => {
@@ -95,22 +109,20 @@ self.addEventListener("fetch", event => {
         return;
     }
 
-    const url = new URL(event.request.url);
-
-
-    // Externe APIs und Bilder nicht abfangen
-    if (url.origin !== self.location.origin) {
+    // Externe Bilder oder APIs nicht abfangen.
+    if (
+        new URL(event.request.url).origin !==
+        self.location.origin
+    ) {
         return;
     }
-
 
     event.respondWith((async () => {
 
         try {
 
-            // Aktuelle Datei vom Server laden
-            const antwort = await fetch(event.request);
-
+            const antwort =
+                await fetch(event.request);
 
             if (antwort.ok) {
 
@@ -127,25 +139,19 @@ self.addEventListener("fetch", event => {
 
         } catch {
 
-            // Falls kein Internet vorhanden:
-            // Datei aus dem Cache verwenden
             const gespeichert =
                 await caches.match(event.request);
 
             if (gespeichert) {
-
                 return gespeichert;
             }
 
-
-            // Fallback für die Startseite
             if (event.request.mode === "navigate") {
 
                 const startseite =
                     await caches.match("./index.html");
 
                 if (startseite) {
-
                     return startseite;
                 }
             }

@@ -1,94 +1,155 @@
 
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
     <meta charset="UTF-8">
+
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0">
+
     <meta name="theme-color" content="#e9494b">
 
     <title>Pokémon & One Piece Quiz</title>
 
-    <link rel="manifest" href="./manifest.webmanifest">
-    <link rel="apple-touch-icon" href="./icons/icon-192.png">
+    <link rel="manifest"
+          href="./manifest.webmanifest">
+
+    <link rel="apple-touch-icon"
+          href="./icons/icon-192.png">
+
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="mobile.css">
 
-    <!-- Datenbanken -->
+    <!-- DATENBANKEN -->
     <script src="js/daten.js" defer></script>
     <script src="js/onepiece-daten.js" defer></script>
     <script src="js/onepiece-episoden.js" defer></script>
     <script src="js/attacken-daten.js" defer></script>
 
-    <!-- Hilfsfunktionen -->
+    <!-- HILFSFUNKTIONEN -->
     <script src="js/hilfe.js" defer></script>
     <script src="js/timer.js" defer></script>
     <script src="js/vorschlaege.js" defer></script>
 
-    <!-- Spielmodi -->
+    <!-- SPIELMODI -->
     <script src="js/modi-namen.js" defer></script>
     <script src="js/modi-typen.js" defer></script>
     <script src="js/modi-attacken.js" defer></script>
     <script src="js/modi-vergleich.js" defer></script>
     <script src="js/onepiece-spiele.js" defer></script>
 
-    <!-- Hauptprogramm -->
+    <!-- HAUPTPROGRAMM -->
     <script src="js/app.js" defer></script>
 </head>
 
 <body>
+
     <header class="kopf">
-        <button id="zur-welt" class="logo" type="button">
+
+        <button id="zur-welt"
+                class="logo"
+                type="button">
             Quiz-Welt
         </button>
-        <span id="kopf-hinweis">Wähle ein Universum</span>
+
+        <span id="kopf-hinweis">
+            Wähle ein Universum
+        </span>
+
     </header>
 
     <main>
-        <!-- Startseite -->
+
+        <!-- ================================= -->
+        <!-- STARTSEITE -->
+        <!-- ================================= -->
+
         <section id="seite-welt">
+
             <h1>Was möchtest du spielen?</h1>
 
             <div class="welten">
+
                 <button id="welt-pokemon"
-                        class="welten-karte" type="button">
+                        class="welten-karte"
+                        type="button">
+
                     <strong>Pokémon</strong>
+
                     <span>
                         Pokédex, Typen, Attacken und Vergleiche
                     </span>
+
                 </button>
 
                 <button id="welt-onepiece"
-                        class="welten-karte" type="button">
+                        class="welten-karte"
+                        type="button">
+
                     <strong>One Piece</strong>
-                    <span>Charaktere und Teufelsfrüchte</span>
+
+                    <span>
+                        Charaktere und Teufelsfrüchte
+                    </span>
+
                 </button>
+
+                <!-- NEU: RUSSISCH -->
+
+                <a href="./russisch.html"
+                   class="welten-karte"
+                   style="text-decoration:none">
+
+                    <strong>🇷🇺 Russisch</strong>
+
+                    <span>
+                        Alphabet, Aussprache und Vokabeln
+                    </span>
+
+                </a>
+
             </div>
         </section>
 
-        <!-- Pokémon-Menü -->
+
+        <!-- ================================= -->
+        <!-- POKÉMON-MENÜ -->
+        <!-- ================================= -->
+
         <section id="seite-pokemon" hidden>
+
             <button id="pokemon-zurueck"
-                    class="sekundaer" type="button">
+                    class="sekundaer"
+                    type="button">
                 ← Startseite
             </button>
 
             <h1>Pokémon Quiz</h1>
+
             <p id="lade-status" role="status">
                 Pokédex wird geladen …
             </p>
 
             <div id="pokemon-einstellungen"
-                 class="einstellungen" hidden>
+                 class="einstellungen"
+                 hidden>
 
                 <label for="max-generation">
+
                     <strong>
-                        Bis zu welcher Generation hast du gespielt?
+                        Bis zu welcher Generation
+                        hast du gespielt?
                     </strong>
+
                 </label>
 
                 <select id="max-generation">
-                    <option value="">Bitte auswählen …</option>
+
+                    <option value="">
+                        Bitte auswählen …
+                    </option>
+
                 </select>
 
                 <strong>
@@ -96,132 +157,183 @@
                 </strong>
 
                 <div class="auswahl-aktionen">
+
                     <button id="alle-generationen"
-                            class="sekundaer" type="button">
+                            class="sekundaer"
+                            type="button">
                         Alle Generationen
                     </button>
 
                     <button id="keine-generationen"
-                            class="sekundaer" type="button">
+                            class="sekundaer"
+                            type="button">
                         Auswahl leeren
                     </button>
+
                 </div>
 
                 <div id="generationen-knopfe"
                      class="generationen"></div>
 
-                <p id="umfang-info" class="hinweis"></p>
+                <p id="umfang-info"
+                   class="hinweis"></p>
+
             </div>
 
+
             <div id="modi-bereich" hidden>
+
                 <h2>Pokédex und Namen</h2>
 
                 <div class="modi">
-                    <button data-modus="frei" type="button">
+
+                    <button data-modus="frei"
+                            type="button">
                         <strong>Frei</strong>
                         <span>Pokémon frei erraten</span>
                     </button>
 
-                    <button data-modus="reihe" type="button">
+                    <button data-modus="reihe"
+                            type="button">
                         <strong>Reihenfolge</strong>
                         <span>Mit optionalem Hardcore-Modus</span>
                     </button>
 
-                    <button data-modus="de-en" type="button">
+                    <button data-modus="de-en"
+                            type="button">
                         <strong>Deutsch → Englisch</strong>
                         <span>Pokémon-Namen übersetzen</span>
                     </button>
 
-                    <button data-modus="en-de" type="button">
+                    <button data-modus="en-de"
+                            type="button">
                         <strong>Englisch → Deutsch</strong>
                         <span>Pokémon-Namen übersetzen</span>
                     </button>
+
                 </div>
+
 
                 <h2>Pokémon-Typen</h2>
 
                 <div class="modi">
-                    <button data-modus="typen" type="button">
+
+                    <button data-modus="typen"
+                            type="button">
                         <strong>Typen erkennen</strong>
                         <span>Typ-Symbole zuordnen</span>
                     </button>
 
-                    <button data-modus="typ-zufall" type="button">
+                    <button data-modus="typ-zufall"
+                            type="button">
                         <strong>Zufälliger Typ</strong>
                         <span>Passende Pokémon nennen</span>
                     </button>
 
-                    <button data-modus="typ-wahl" type="button">
+                    <button data-modus="typ-wahl"
+                            type="button">
                         <strong>Typ vervollständigen</strong>
                         <span>Alle Pokémon eines Typs finden</span>
                     </button>
+
                 </div>
+
 
                 <h2>Attacken</h2>
 
                 <div class="modi">
+
                     <button data-modus="attacke-de-en"
                             type="button">
-                        <strong>Attacken Deutsch → Englisch</strong>
+                        <strong>
+                            Attacken Deutsch → Englisch
+                        </strong>
                         <span>Attackennamen übersetzen</span>
                     </button>
 
                     <button data-modus="attacke-en-de"
                             type="button">
-                        <strong>Attacken Englisch → Deutsch</strong>
+                        <strong>
+                            Attacken Englisch → Deutsch
+                        </strong>
                         <span>Attackennamen übersetzen</span>
                     </button>
 
                     <button data-modus="attacke-wer-frei"
                             type="button">
-                        <strong>Wer lernt diese Attacke?</strong>
+                        <strong>
+                            Wer lernt diese Attacke?
+                        </strong>
                         <span>Frei – Lernmethode wählbar</span>
                     </button>
 
                     <button data-modus="attacke-wer-reihe"
                             type="button">
-                        <strong>Wer lernt diese Attacke?</strong>
+                        <strong>
+                            Wer lernt diese Attacke?
+                        </strong>
                         <span>Reihenfolge</span>
                     </button>
 
                     <button data-modus="pokemon-attacken-frei"
                             type="button">
-                        <strong>Attacken eines Pokémon</strong>
-                        <span>Frei – Level, TM, VM, Ei, Tutor …</span>
+                        <strong>
+                            Attacken eines Pokémon
+                        </strong>
+                        <span>
+                            Frei – Level, TM, VM, Ei, Tutor …
+                        </span>
                     </button>
 
                     <button data-modus="pokemon-attacken-reihe"
                             type="button">
-                        <strong>Attacken eines Pokémon</strong>
+                        <strong>
+                            Attacken eines Pokémon
+                        </strong>
                         <span>Reihenfolge</span>
                     </button>
+
                 </div>
+
 
                 <h2>Vergleichsquiz</h2>
 
                 <div class="modi">
+
                     <button data-modus="pokemon-vergleich"
                             type="button">
                         <strong>Pokémon vergleichen</strong>
-                        <span>Farbe, Typen, Größe, Gewicht …</span>
+                        <span>
+                            Farbe, Typen, Größe, Gewicht …
+                        </span>
                     </button>
+
                 </div>
+
             </div>
         </section>
 
-        <!-- One-Piece-Menü -->
+
+        <!-- ================================= -->
+        <!-- ONE-PIECE-MENÜ -->
+        <!-- ================================= -->
+
         <section id="seite-onepiece" hidden>
+
             <button id="onepiece-zurueck"
-                    class="sekundaer" type="button">
+                    class="sekundaer"
+                    type="button">
                 ← Startseite
             </button>
 
             <h1>One Piece Quiz</h1>
 
             <div class="einstellungen">
+
                 <label for="onepiece-episode">
                     <strong>
-                        Bis zu welcher Anime-Episode hast du geschaut?
+                        Bis zu welcher Anime-Episode
+                        hast du geschaut?
                     </strong>
                 </label>
 
@@ -239,6 +351,7 @@
                     <input type="radio"
                            name="op-freigabe"
                            value="erwaehnung">
+
                     Fruit Debut – Frucht erstmals gezeigt
                 </label>
 
@@ -247,22 +360,28 @@
                            name="op-freigabe"
                            value="anwendung"
                            checked>
+
                     Usage Debut – Fähigkeit erstmals genutzt
                 </label>
 
-                <button id="episode-speichern" type="button">
+                <button id="episode-speichern"
+                        type="button">
                     Einstellungen übernehmen
                 </button>
 
                 <p id="episode-status"
                    class="hinweis"
                    role="status"></p>
+
             </div>
 
+
             <div id="onepiece-modi" hidden>
+
                 <h2>Charaktere</h2>
 
                 <div class="modi">
+
                     <button data-op-modus="op-vergleich"
                             type="button">
                         <strong>Charaktere vergleichen</strong>
@@ -270,42 +389,62 @@
                             Alter, Größe, Kopfgeld, Frucht, Arc
                         </span>
                     </button>
+
                 </div>
+
 
                 <h2>Teufelsfrüchte</h2>
 
                 <div class="modi">
+
                     <button data-op-modus="op-frucht-sprache"
                             type="button">
-                        <strong>Teufelsfrüchte übersetzen</strong>
-                        <span>Deutsch, Englisch, Japanisch</span>
+                        <strong>
+                            Teufelsfrüchte übersetzen
+                        </strong>
+                        <span>
+                            Deutsch, Englisch, Japanisch
+                        </span>
                     </button>
 
                     <button data-op-modus="op-frucht-anwender"
                             type="button">
                         <strong>Frucht → Anwender</strong>
-                        <span>Wer nutzt diese Frucht?</span>
+                        <span>
+                            Wer nutzt diese Frucht?
+                        </span>
                     </button>
 
                     <button data-op-modus="op-anwender-frucht"
                             type="button">
                         <strong>Anwender → Frucht</strong>
-                        <span>Welche Frucht gehört zur Figur?</span>
+                        <span>
+                            Welche Frucht gehört zur Figur?
+                        </span>
                     </button>
+
                 </div>
 
                 <p class="hinweis">
-                    Die Episodenfilter benutzen deinen lokalen
-                    Wiki-Datensatz.
+                    Die Episodenfilter benutzen deinen
+                    lokalen Wiki-Datensatz.
                 </p>
+
             </div>
         </section>
 
-        <!-- Gemeinsamer Spielbereich -->
+
+        <!-- ================================= -->
+        <!-- SPIELBEREICH -->
+        <!-- ================================= -->
+
         <section id="seite-spiel" hidden>
+
             <div class="spiel-kopf">
+
                 <button id="spiel-zurueck"
-                        class="sekundaer" type="button">
+                        class="sekundaer"
+                        type="button">
                     ← Zurück
                 </button>
 
@@ -314,27 +453,43 @@
                 <strong>
                     ⏱ <span id="spiel-timer">00:00</span>
                 </strong>
+
             </div>
 
-            <p id="spiel-umfang" class="hinweis"></p>
+            <p id="spiel-umfang"
+               class="hinweis"></p>
+
             <div id="spiel-inhalt"></div>
+
         </section>
+
     </main>
 
-    <!-- PWA aktivieren -->
+
+    <!-- SERVICE WORKER -->
+
     <script>
+
         if ("serviceWorker" in navigator) {
+
             window.addEventListener("load", async () => {
+
                 try {
-                    await navigator.serviceWorker.register("./sw.js");
+
+                    await navigator.serviceWorker.register(
+                        "./sw.js"
+                    );
+
                 } catch (fehler) {
+
                     console.warn(
-                        "Service Worker konnte nicht registriert werden:",
+                        "Service Worker:",
                         fehler
                     );
                 }
             });
         }
     </script>
+
 </body>
 </html>
