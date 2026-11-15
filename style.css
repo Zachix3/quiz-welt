@@ -1,0 +1,1026 @@
+
+/* =========================================
+   1. GRUNDLAYOUT
+   ========================================= */
+
+:root {
+    font-family: Arial, sans-serif;
+    color: #263247;
+    background: #f3f6fb;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+.kopf {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+
+    padding: 12px max(
+        16px,
+        calc((100vw - 1400px) / 2)
+    );
+
+    background: #e9494b;
+    color: white;
+}
+
+.logo {
+    background: transparent;
+    color: white;
+    border: 2px solid #ffffff99;
+    font-weight: bold;
+}
+
+main {
+    max-width: 1400px;
+    margin: 14px auto;
+    padding: 0 14px 30px;
+}
+
+h1 {
+    font-size: 26px;
+}
+
+h2 {
+    margin: 18px 0 12px;
+    font-size: 21px;
+}
+
+h3 {
+    font-size: 16px;
+}
+
+p {
+    line-height: 1.4;
+}
+
+
+/* =========================================
+   2. EINGABEN UND BUTTONS
+   ========================================= */
+
+button,
+input,
+select {
+    font: inherit;
+}
+
+button {
+    padding: 10px 14px;
+    border: none;
+    border-radius: 8px;
+    background: #e9494b;
+    color: white;
+    cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+    filter: brightness(0.94);
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+    outline: 3px solid #4b86db;
+    outline-offset: 2px;
+}
+
+input,
+select {
+    padding: 10px;
+    border: 1px solid #bdc7d3;
+    border-radius: 8px;
+    min-width: 0;
+}
+
+.sekundaer {
+    background: #64748b;
+}
+
+.aufgeben {
+    background: #c8750d;
+}
+
+.hinweis {
+    color: #657185;
+    font-size: 13px;
+}
+
+.meldung {
+    min-height: 24px;
+    margin: 8px 0;
+    color: #177744;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.meldung::after {
+    content: attr(data-fortschritt);
+    float: right;
+    color: #4e5d72;
+}
+
+.fortschritt,
+.statistik {
+    font-size: 14px;
+    font-weight: bold;
+    color: #64748b;
+}
+
+.aktionen,
+.auswahl-aktionen,
+.generationen {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+
+/* =========================================
+   3. STARTSEITEN UND MENÜS
+   ========================================= */
+
+.welten,
+.modi {
+    display: grid;
+
+    grid-template-columns: repeat(
+        auto-fit,
+        minmax(220px, 1fr)
+    );
+
+    gap: 14px;
+}
+
+.welten-karte,
+.modi button {
+    min-height: 110px;
+    padding: 20px;
+
+    background: white;
+    color: #27344b;
+    border: 2px solid #dfe5ed;
+
+    text-align: left;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.welten-karte {
+    min-height: 175px;
+}
+
+.welten-karte strong {
+    font-size: 25px;
+}
+
+.modi button strong {
+    font-size: 17px;
+}
+
+.welten-karte span,
+.modi button span {
+    color: #607086;
+    font-size: 13px;
+}
+
+.welten-karte:hover,
+.modi button:hover {
+    border-color: #e9494b;
+}
+
+.einstellungen {
+    margin: 18px 0;
+    padding: 18px;
+
+    background: white;
+    border-radius: 12px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.einstellungen select,
+.einstellungen input[type="number"] {
+    width: min(100%, 320px);
+}
+
+.generations-chip {
+    background: #e4ebf5;
+    border: 2px solid transparent;
+    color: #27344b;
+}
+
+.generations-chip.aktiv {
+    background: #e9494b;
+    color: white;
+    border-color: #b83235;
+}
+
+
+/* =========================================
+   4. SPIELKOPF UND EINGABEN
+   ========================================= */
+
+.spiel-kopf {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.spiel-kopf h2 {
+    margin: 0;
+}
+
+#spiel-timer {
+    font-variant-numeric: tabular-nums;
+}
+
+.eingabe-leiste {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 9px;
+
+    padding: 10px;
+    border-radius: 10px;
+    background: white;
+}
+
+.namen-eingabe {
+    flex: 1;
+    min-width: 190px;
+}
+
+.schatten-label,
+.hardcore-label,
+.uebung-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.hardcore-label {
+    color: #b91c1c;
+    font-weight: bold;
+}
+
+
+/* =========================================
+   5. POKÉDEX-KARTEN
+   ========================================= */
+
+/*
+ * Das normale Pokédex-Raster bleibt kompakt.
+ * So passen möglichst viele Pokémon auf
+ * einen Bildschirm.
+ */
+
+.dex-grid {
+    display: grid;
+
+    grid-template-columns: repeat(
+        19,
+        minmax(0, 1fr)
+    );
+
+    gap: 3px;
+}
+
+.pokemon-karte {
+    min-width: 0;
+    height: 57px;
+    padding: 2px;
+
+    border: 1px solid #dde4ec;
+    border-radius: 5px;
+    background: white;
+
+    overflow: hidden;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.pokemon-karte.gefunden {
+    background: #e1f6e5;
+    border-color: #83c994;
+}
+
+.pokemon-karte.aufgedeckt {
+    background: #ffe6e2;
+    border-color: #e7a1a1;
+}
+
+.pokemon-karte.aktuell {
+    outline: 2px solid #e9494b;
+    outline-offset: -2px;
+}
+
+.dex-nummer {
+    font-size: 9px;
+    color: #8a96a5;
+}
+
+.karten-inhalt {
+    flex: 1;
+    width: 100%;
+    min-height: 0;
+
+    overflow: hidden;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.fragezeichen {
+    font-size: 26px;
+    color: #b7c1ce;
+}
+
+.mini-bild {
+    max-width: 100%;
+    height: 33px;
+    object-fit: contain;
+}
+
+.mini-bild.schatten {
+    filter: brightness(0);
+    opacity: 0.85;
+}
+
+.mini-name {
+    max-width: 100%;
+    overflow: hidden;
+
+    white-space: nowrap;
+    text-overflow: ellipsis;
+
+    font-size: 9px;
+    font-weight: bold;
+    text-align: center;
+}
+
+
+/* =========================================
+   6. TYP-VERVOLLSTÄNDIGEN-RASTER
+   ========================================= */
+
+.typ-raster {
+    grid-template-columns: repeat(
+        auto-fill,
+        minmax(85px, 1fr)
+    );
+}
+
+.typ-raster .pokemon-karte {
+    height: 100px;
+}
+
+.typ-raster .mini-bild {
+    height: 58px;
+}
+
+.typ-raster .mini-name {
+    font-size: 11px;
+}
+
+.zeit-etikett {
+    font-size: 9px;
+    color: #6a7687;
+    white-space: nowrap;
+}
+
+
+/* =========================================
+   7. ATTACKENQUIZ – GROSSE ERGEBNISKARTEN
+   ========================================= */
+
+/*
+ * NEU:
+ *
+ * Das Attackenquiz besitzt bereits die Klasse
+ * "antwort-raster".
+ *
+ * Deshalb können wir nur dessen Felder vergrößern,
+ * ohne den normalen Pokédex zu verändern.
+ */
+
+
+/* Breiterer Spielbereich bei Ergebnis-Rastern */
+
+.frage-karte:has(.antwort-raster:not(:empty)) {
+    max-width: 1120px;
+}
+
+
+/* Größeres Raster mit weniger Spalten */
+
+.antwort-raster {
+    display: grid;
+
+    grid-template-columns: repeat(
+        auto-fill,
+        minmax(min(100%, 180px), 1fr)
+    );
+
+    gap: 10px;
+    margin-top: 14px;
+}
+
+
+/* Größere Karten */
+
+.antwort-raster .pokemon-karte {
+    width: 100%;
+
+    height: auto;
+    min-height: 96px;
+
+    padding: 12px 10px;
+
+    border-radius: 10px;
+    border-width: 2px;
+
+    overflow: visible;
+
+    justify-content: center;
+    align-items: center;
+}
+
+
+/* Inhalt darf vollständig angezeigt werden */
+
+.antwort-raster .karten-inhalt {
+    flex: 0 1 auto;
+
+    width: 100%;
+    height: auto;
+    min-height: 65px;
+
+    overflow: visible;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    gap: 6px;
+}
+
+
+/*
+ * WICHTIGSTE ÄNDERUNG:
+ *
+ * Bisher hatten Attackennamen:
+ * - eine Schriftgröße von 9px
+ * - white-space: nowrap
+ * - text-overflow: ellipsis
+ *
+ * Dadurch wurden längere Namen abgeschnitten.
+ *
+ * Jetzt:
+ * - 15px Schriftgröße
+ * - beliebig viele Textzeilen
+ * - kein Abschneiden mehr
+ */
+
+.antwort-raster .mini-name {
+    display: block;
+
+    width: 100%;
+    max-width: 100%;
+
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.4;
+
+    text-align: center;
+
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+
+    overflow-wrap: anywhere;
+    word-break: normal;
+}
+
+
+/* Pokémon-Bilder bei Attacke -> Pokémon */
+
+.antwort-raster .mini-bild {
+    display: block;
+
+    width: 55px;
+    height: 55px;
+
+    max-width: 100%;
+
+    object-fit: contain;
+}
+
+
+/* Fragezeichen deutlich anzeigen */
+
+.antwort-raster .fragezeichen {
+    font-size: 32px;
+    line-height: 1;
+}
+
+
+/* Gefundene Attacken besser hervorheben */
+
+.antwort-raster .pokemon-karte.gefunden {
+    background: #e1f6e5;
+    border-color: #71bd83;
+}
+
+.antwort-raster .pokemon-karte.aufgedeckt {
+    background: #ffe6e2;
+    border-color: #e7a1a1;
+}
+
+
+/* Abstände bei sehr langen Attacken */
+
+.antwort-raster .pokemon-karte:has(.mini-name) {
+    padding-top: 16px;
+    padding-bottom: 16px;
+}
+
+
+/* =========================================
+   8. FRAGEN UND TYPEN
+   ========================================= */
+
+.frage-karte {
+    max-width: 700px;
+    margin: 12px auto;
+    padding: 22px;
+
+    border-radius: 12px;
+    background: white;
+}
+
+.frage-name {
+    padding: 34px 10px;
+    margin: 20px 0;
+
+    border-radius: 12px;
+    background: #f2f5fa;
+
+    font-size: clamp(25px, 5vw, 42px);
+    font-weight: bold;
+    text-align: center;
+
+    overflow-wrap: anywhere;
+}
+
+.frage-karte .namen-eingabe {
+    width: 100%;
+}
+
+.pokemon-frage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    padding: 8px;
+    border-radius: 12px;
+    background: #f2f5fa;
+}
+
+.artwork {
+    width: 140px;
+    height: 140px;
+    object-fit: contain;
+}
+
+.pokemon-frage strong {
+    font-size: 23px;
+}
+
+.typ-felder {
+    display: grid;
+
+    grid-template-columns: repeat(
+        2,
+        minmax(0, 1fr)
+    );
+
+    gap: 8px;
+}
+
+.typ-feld {
+    min-height: 60px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 2px solid #cbd5e1;
+    background: #f3f6fb;
+    color: #27344b;
+}
+
+.typ-feld.aktiv {
+    border-color: #e9494b;
+    outline: 2px solid #ffd9d9;
+}
+
+.typen-palette,
+.typ-auswahl {
+    display: grid;
+
+    grid-template-columns: repeat(
+        5,
+        minmax(0, 1fr)
+    );
+
+    gap: 6px;
+    margin: 12px 0;
+}
+
+.typ-button {
+    min-width: 0;
+    min-height: 65px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 3px;
+
+    background: var(--typ-farbe);
+    color: white;
+
+    border: 2px solid transparent;
+
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.typ-button.aktiv {
+    border-color: #111827;
+}
+
+.typ-symbol {
+    width: 27px;
+    height: 27px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.typ-symbol img {
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.typ-plakette {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+
+    background: var(--typ-farbe);
+    border-radius: 8px;
+    color: white;
+
+    padding: 6px 10px;
+
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.typ-frage {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+
+    margin: 8px 0;
+    padding: 10px;
+
+    border-radius: 10px;
+    background: white;
+
+    color: #64748b;
+    font-size: 13px;
+}
+
+
+/* =========================================
+   9. AUTOVERVOLLSTÄNDIGUNG
+   ========================================= */
+
+.vorschlaege {
+    display: grid;
+    gap: 4px;
+    margin: 8px 0;
+}
+
+.vorschlag {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    text-align: left;
+
+    background: #f1f5fa;
+    color: #27344b;
+
+    border: 1px solid #dbe4ef;
+}
+
+.vorschlag:hover {
+    background: #e2eaf5;
+}
+
+.vorschlag img {
+    width: 43px;
+    height: 43px;
+    object-fit: contain;
+}
+
+.vorschlag-bild {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 43px;
+    height: 43px;
+
+    background: #cbd5e1;
+    border-radius: 6px;
+}
+
+.vorschlag small {
+    display: block;
+    color: #64748b;
+}
+
+
+/* =========================================
+   10. VERGLEICHSQUIZ
+   ========================================= */
+
+.vergleich-frage {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.vergleich-tabelle {
+    width: 100%;
+
+    border-collapse: separate;
+    border-spacing: 4px;
+
+    table-layout: fixed;
+}
+
+.vergleich-tabelle th {
+    font-size: 11px;
+    color: #657185;
+
+    text-align: center;
+    overflow-wrap: anywhere;
+}
+
+.vergleich-tabelle td {
+    padding: 10px 4px;
+    border-radius: 8px;
+
+    font-size: 12px;
+    font-weight: bold;
+    text-align: center;
+
+    overflow-wrap: anywhere;
+}
+
+.vergleich-tabelle .neutral {
+    background: #e2e8f0;
+    color: #334155;
+}
+
+.vergleich-tabelle .gruen {
+    background: #c4f1ce;
+    color: #166534;
+}
+
+.vergleich-tabelle .gelb {
+    background: #fef08a;
+    color: #854d0e;
+}
+
+.vergleich-tabelle .rot {
+    background: #fecaca;
+    color: #991b1b;
+}
+
+.vergleich-tabelle img {
+    display: block;
+
+    width: 48px;
+    height: 48px;
+    margin: auto;
+
+    object-fit: contain;
+}
+
+.vergleich-info {
+    font-size: 12px;
+    color: #64748b;
+}
+
+.tabellen-scroll {
+    overflow-x: auto;
+}
+
+
+/* =========================================
+   11. ONE PIECE
+   ========================================= */
+
+.onepiece-bild {
+    width: 130px;
+    height: 130px;
+
+    object-fit: contain;
+    border-radius: 10px;
+}
+
+.frucht-frage {
+    padding: 22px 12px;
+    text-align: center;
+
+    border-radius: 12px;
+    background: #f1f5fa;
+}
+
+.frucht-frage strong {
+    font-size: 25px;
+}
+
+.frucht-frage small {
+    display: block;
+    margin-top: 8px;
+    color: #64748b;
+}
+
+.optionen-zeile {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin: 12px 0;
+}
+
+.optionen-zeile select {
+    flex: 1;
+}
+
+.inhalt-hinweis {
+    padding: 10px;
+    border-radius: 8px;
+
+    background: #eff6ff;
+    color: #334155;
+    font-size: 13px;
+}
+
+
+/* =========================================
+   12. RESPONSIVE DESIGN
+   ========================================= */
+
+@media (max-width: 1100px) {
+
+    .dex-grid {
+        grid-template-columns: repeat(
+            15,
+            minmax(0, 1fr)
+        );
+    }
+
+    /* Das Attackenquiz behält größere Karten */
+
+    .antwort-raster {
+        grid-template-columns: repeat(
+            auto-fill,
+            minmax(min(100%, 180px), 1fr)
+        );
+    }
+}
+
+
+@media (max-width: 800px) {
+
+    .dex-grid {
+        grid-template-columns: repeat(
+            12,
+            minmax(0, 1fr)
+        );
+    }
+
+    .antwort-raster {
+        grid-template-columns: repeat(
+            auto-fill,
+            minmax(min(100%, 170px), 1fr)
+        );
+    }
+}
+
+
+@media (max-width: 550px) {
+
+    .dex-grid {
+        grid-template-columns: repeat(
+            8,
+            minmax(0, 1fr)
+        );
+    }
+
+    /* Auf Mobilgeräten ungefähr zwei Attackenkarten */
+
+    .antwort-raster {
+        grid-template-columns: repeat(
+            auto-fit,
+            minmax(min(100%, 145px), 1fr)
+        );
+
+        gap: 8px;
+    }
+
+    .antwort-raster .pokemon-karte {
+        min-height: 100px;
+        padding: 12px 8px;
+    }
+
+    .antwort-raster .mini-name {
+        font-size: 14px;
+    }
+
+    .typen-palette,
+    .typ-auswahl {
+        grid-template-columns: repeat(
+            4,
+            minmax(0, 1fr)
+        );
+    }
+
+    .frage-karte {
+        padding: 15px;
+    }
+
+    .artwork {
+        width: 115px;
+        height: 115px;
+    }
+
+    .eingabe-leiste .namen-eingabe {
+        flex-basis: 100%;
+    }
+
+    .vergleich-tabelle {
+        min-width: 650px;
+    }
+}

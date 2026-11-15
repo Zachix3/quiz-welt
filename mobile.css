@@ -1,0 +1,127 @@
+
+/* =========================================
+   MOBILE ANPASSUNGEN
+   ========================================= */
+
+@media (max-width: 600px) {
+
+    /* Mehr Platz für den eigentlichen Spielbereich */
+    main {
+        padding: 0 10px 24px;
+    }
+
+    .kopf {
+        gap: 8px;
+        padding: 12px;
+    }
+
+    .kopf #kopf-hinweis {
+        font-size: 12px;
+        text-align: right;
+    }
+
+    h1 {
+        font-size: 23px;
+    }
+
+    /* Große Berührungsflächen */
+    button {
+        min-height: 44px;
+    }
+
+    /* Verhindert automatisches Heranzoomen
+       beim Fokussieren von Eingabefeldern auf iOS */
+    input,
+    select {
+        font-size: 16px;
+    }
+
+    /* Ein Modus pro Zeile */
+    .modi,
+    .welten {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .modi button {
+        min-height: 88px;
+        padding: 14px;
+    }
+
+    .einstellungen {
+        padding: 12px;
+    }
+
+    /* Pokédex: größere Karten als bisher */
+    .dex-grid:not(.antwort-raster):not(.typ-raster) {
+        grid-template-columns: repeat(
+            5,
+            minmax(0, 1fr)
+        );
+
+        gap: 4px;
+    }
+
+    .dex-grid:not(.antwort-raster):not(.typ-raster)
+    .pokemon-karte {
+        height: 72px;
+    }
+
+    .dex-grid:not(.antwort-raster):not(.typ-raster)
+    .mini-bild {
+        height: 37px;
+    }
+
+    .dex-grid:not(.antwort-raster):not(.typ-raster)
+    .mini-name {
+        font-size: 10px;
+        white-space: normal;
+        line-height: 1.1;
+        overflow-wrap: anywhere;
+    }
+
+    /* Attackenkarten bleiben gut lesbar */
+    .antwort-raster {
+        grid-template-columns: repeat(
+            2,
+            minmax(0, 1fr)
+        );
+    }
+
+    .antwort-raster .pokemon-karte {
+        min-height: 95px;
+    }
+
+    /* Eingabe mit Prüfen-Button */
+    .antwort-form {
+        display: flex;
+        gap: 8px;
+    }
+
+    .antwort-form .namen-eingabe {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .antwort-form button {
+        flex-shrink: 0;
+    }
+
+    /* Vergleichstabellen können seitlich scrollen */
+    .tabellen-scroll {
+        overflow-x: auto;
+    }
+
+    .vergleich-tabelle {
+        min-width: 650px;
+    }
+
+    /* Typ-Symbole nicht zu klein */
+    .typen-palette,
+    .typ-auswahl {
+        grid-template-columns: repeat(
+            3,
+            minmax(0, 1fr)
+        );
+    }
+}
