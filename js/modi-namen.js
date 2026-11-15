@@ -1,14 +1,18 @@
 
-/* =========================================
-   NAMENSSPIELE UND HARDCORE-MODUS
-   ========================================= */
+/* ================================================
+   POKÉDEX-NAMEN UND ÜBERSETZUNGEN
+
+   NEU:
+   Ein Pokémon aufdecken im Reihenfolge-Modus.
+   Nicht verfügbar in Hardcore.
+   ================================================ */
 
 
 /**
  * Erstellt den freien oder sortierten Pokédex.
  *
  * @param {Object} kontext - Pokémon und Timeranzeige
- * @param {boolean} reihenfolge - Reihenfolge erzwingen?
+ * @param {boolean} reihenfolge - Nationaldex-Reihenfolge?
  * @returns {Object} Spielsitzung
  */
 function erstellePokedexModus(kontext, reihenfolge) {
@@ -29,15 +33,22 @@ function erstellePokedexModus(kontext, reihenfolge) {
                    spellcheck="false">
 
             <label class="schatten-label">
-                <input class="schatten-an" type="checkbox">
+                <input class="schatten-an"
+                       type="checkbox">
                 Schatten
             </label>
 
             ${reihenfolge ? `
                 <label class="hardcore-label">
-                    <input class="hardcore-an" type="checkbox">
+                    <input class="hardcore-an"
+                           type="checkbox">
                     Hardcore
                 </label>
+
+                <button class="einzelhinweis sekundaer"
+                        type="button">
+                    Ein Pokémon aufdecken
+                </button>
             ` : ""}
 
             <button class="aufgeben" type="button">
@@ -47,24 +58,53 @@ function erstellePokedexModus(kontext, reihenfolge) {
             <button class="neu sekundaer" type="button">
                 Neustart
             </button>
+
         </div>
 
         <p class="meldung" role="status"></p>
+
         <div class="dex-grid"></div>
     `;
 
-    const eingabe = root.querySelector(".namen-eingabe");
-    const ziel = root.querySelector(".ziel-text");
-    const schatten = root.querySelector(".schatten-an");
-    const hardcore = root.querySelector(".hardcore-an");
-    const meldung = root.querySelector(".meldung");
-    const raster = root.querySelector(".dex-grid");
-    const aufgeben = root.querySelector(".aufgeben");
+
+    // =====================================
+    // HTML-ELEMENTE
+    // =====================================
+
+    const eingabe =
+        root.querySelector(".namen-eingabe");
+
+    const ziel =
+        root.querySelector(".ziel-text");
+
+    const schatten =
+        root.querySelector(".schatten-an");
+
+    const hardcore =
+        root.querySelector(".hardcore-an");
+
+    const hinweisButton =
+        root.querySelector(".einzelhinweis");
+
+    const meldung =
+        root.querySelector(".meldung");
+
+    const raster =
+        root.querySelector(".dex-grid");
+
+    const aufgebenButton =
+        root.querySelector(".aufgeben");
 
     const timer = erstelleStoppuhr(timerAnzeige);
 
+
+    // =====================================
+    // SPIELZUSTAND
+    // =====================================
+
     const gefunden = new Set();
-    const offengelegt = new Set();
+    const aufgedeckt = new Set();
+
     const karten = new Map();
 
     let naechster = 0;
@@ -72,16 +112,33 @@ function erstellePokedexModus(kontext, reihenfolge) {
 
 
     /**
-     * Setzt eine Pokémon-Karte auf den aktuellen Zustand.
+     * Blendet Hinweise im Hardcore-Modus aus.
      *
-     * @param {Object} pokemon - Pokémon-Objekt
+     * @returns {void}
+     */
+    function hardcoreAnzeige() {
+
+        const aktiv = !!hardcore?.checked;
+
+        if (hinweisButton) {
+            hinweisButton.hidden = aktiv;
+        }
+
+        aufgebenButton.hidden = aktiv;
+    }
+
+
+    /**
+     * Aktualisiert eine Pokémon-Karte.
+     *
+     * @param {Object} pokemon - Pokémon
      * @returns {void}
      */
     function zeichne(pokemon) {
 
         const status = gefunden.has(pokemon.id)
             ? "gefunden"
-            : offengelegt.has(pokemon.id)
+            : aufgedeckt.has(pokemon.id)
                 ? "aufgedeckt"
                 : schatten.checked
                     ? "schatten"
@@ -89,10 +146,14 @@ function erstellePokedexModus(kontext, reihenfolge) {
 
         const teile = karten.get(pokemon.id);
 
+        if (!teile) return;
+
         zeichneKarte(pokemon, teile, status);
 
         teile.karte.classList.toggle(
+
             "aktuell",
+
             reihenfolge &&
             !beendet &&
             pool[naechster]?.id === pokemon.id
@@ -101,13 +162,14 @@ function erstellePokedexModus(kontext, reihenfolge) {
 
 
     /**
-     * Erstellt die Karten einmalig.
+     * Erstellt das Pokédex-Raster.
      *
      * @returns {void}
      */
     function erstelleRaster() {
 
-        const fragment = document.createDocumentFragment();
+        const fragment =
+            document.createDocumentFragment();
 
         for (const pokemon of pool) {
 
@@ -125,42 +187,71 @@ function erstellePokedexModus(kontext, reihenfolge) {
 
 
     /**
-     * Aktualisiert Fortschritt und gesuchtes Pokémon.
+     * Gibt die Zahl aller erledigten Pokémon zurück.
+     *
+     * @returns {number} Richtig + aufgedeckt
+     */
+    function anzahlErledigt() {
+
+        return gefunden.size + aufgedeckt.size;
+    }
+
+
+    /**
+     * Aktualisiert die gesuchte Nummer und Statistik.
+     *
+     * Aufgedeckte Pokémon werden bei der Reihenfolge
+     * übersprungen.
      *
      * @returns {void}
      */
     function aktualisieren() {
 
-        // Vorausgefundene Pokémon überspringen
         if (reihenfolge) {
 
             while (
+
                 naechster < pool.length &&
-                gefunden.has(pool[naechster].id)
+
+                (
+                    gefunden.has(pool[naechster].id) ||
+                    aufgedeckt.has(pool[naechster].id)
+                )
+
             ) {
                 naechster++;
             }
 
+
             ziel.textContent = naechster < pool.length
+
                 ? `Gesucht: #${String(
                     pool[naechster].id
                 ).padStart(4, "0")}`
-                : "Alle gefunden!";
+
+                : "Alle erledigt!";
 
         } else {
 
             ziel.textContent = "Pokédex";
         }
 
+
         meldung.dataset.fortschritt =
-            `${gefunden.size} / ${pool.length}`;
+
+            `${gefunden.size} richtig · ` +
+            `${aufgedeckt.size} aufgedeckt / ` +
+            `${pool.length}`;
+
 
         if (reihenfolge) {
 
             for (const pokemon of pool) {
 
                 karten.get(pokemon.id).karte.classList.toggle(
+
                     "aktuell",
+
                     !beendet &&
                     pool[naechster]?.id === pokemon.id
                 );
@@ -170,9 +261,37 @@ function erstellePokedexModus(kontext, reihenfolge) {
 
 
     /**
-     * Startet die Runde neu.
+     * Beendet die Spielrunde.
      *
-     * @param {string} grund - Optionale Reset-Meldung
+     * @returns {void}
+     */
+    function beenden() {
+
+        beendet = true;
+
+        timer.stop();
+
+        eingabe.disabled = true;
+        aufgebenButton.disabled = true;
+        schatten.disabled = true;
+
+        if (hinweisButton) {
+            hinweisButton.disabled = true;
+        }
+
+        aktualisieren();
+
+        meldung.textContent =
+
+            `Fertig! ${gefunden.size} richtig, ` +
+            `${aufgedeckt.size} aufgedeckt.`;
+    }
+
+
+    /**
+     * Startet eine neue Runde.
+     *
+     * @param {string} grund - Optionale Meldung
      * @returns {void}
      */
     function neu(grund = "") {
@@ -181,7 +300,7 @@ function erstellePokedexModus(kontext, reihenfolge) {
         naechster = 0;
 
         gefunden.clear();
-        offengelegt.clear();
+        aufgedeckt.clear();
 
         eingabe.value = "";
         eingabe.disabled = false;
@@ -189,7 +308,14 @@ function erstellePokedexModus(kontext, reihenfolge) {
         schatten.checked = false;
         schatten.disabled = false;
 
-        aufgeben.disabled = false;
+        aufgebenButton.disabled = false;
+
+        if (hinweisButton) {
+            hinweisButton.disabled = false;
+        }
+
+        hardcoreAnzeige();
+
 
         for (const pokemon of pool) {
             zeichne(pokemon);
@@ -201,16 +327,14 @@ function erstellePokedexModus(kontext, reihenfolge) {
 
         timer.start();
 
-        if (root.isConnected) eingabe.focus();
+        if (root.isConnected) {
+            eingabe.focus();
+        }
     }
 
 
     /**
-     * Prüft eingegebene Pokémon-Namen sofort.
-     *
-     * Hardcore:
-     * Ein vollständiger anderer Pokémon-Name setzt zurück.
-     * Ein bloßer Tippfehler während des Tippens nicht.
+     * Prüft einen eingegebenen Pokémon-Namen.
      *
      * @returns {void}
      */
@@ -218,32 +342,41 @@ function erstellePokedexModus(kontext, reihenfolge) {
 
         if (beendet) return;
 
-        const treffer = sucheNamen(pool, eingabe.value);
+        const treffer =
+            sucheNamen(pool, eingabe.value);
 
-        // Hardcore prüft auch Pokémon außerhalb
-        // der aktuell ausgewählten Generationen.
-        const alleBekannten = reihenfolge && hardcore?.checked
-            ? sucheNamen(ALLE_POKEMON, eingabe.value)
-            : [];
+        const alleBekannten =
+            reihenfolge && hardcore?.checked
+
+                ? sucheNamen(
+                    ALLE_POKEMON,
+                    eingabe.value
+                )
+
+                : [];
+
+
+        // =====================================
+        // REIHENFOLGE PRÜFEN
+        // =====================================
 
         if (reihenfolge) {
 
             const erwartet = pool[naechster];
 
-            const passt = treffer.some(
-                p => p.id === erwartet?.id
+            const passt = treffer.some(pokemon =>
+                pokemon.id === erwartet?.id
             );
 
-            // Vollständiger Name, aber falsches Pokémon
             if (!passt) {
 
+                // Hardcore:
+                // Vollständiger, aber falscher Name
                 if (alleBekannten.length) {
 
-                    const falsch = alleBekannten[0].de;
-
                     neu(
-                        `Hardcore: ${falsch} war falsch! ` +
-                        "Du beginnst wieder von vorne."
+                        `Hardcore: ${alleBekannten[0].de} ` +
+                        "war falsch! Von vorne."
                     );
                 }
 
@@ -256,42 +389,102 @@ function erstellePokedexModus(kontext, reihenfolge) {
             return;
         }
 
-        const neue = treffer.filter(
-            p => !gefunden.has(p.id)
+
+        // =====================================
+        // NEUE TREFFER AUFNEHMEN
+        // =====================================
+
+        const neueTreffer = treffer.filter(pokemon =>
+
+            !gefunden.has(pokemon.id) &&
+
+            !aufgedeckt.has(pokemon.id)
         );
 
-        if (!neue.length) {
 
-            meldung.textContent = "Bereits entdeckt.";
+        if (!neueTreffer.length) {
+
+            meldung.textContent =
+                "Bereits entdeckt oder aufgedeckt.";
+
             return;
         }
 
-        // Nidoran deckt bei einer Eingabe beide Arten auf
-        for (const p of neue) {
 
-            gefunden.add(p.id);
-            zeichne(p);
+        for (const pokemon of neueTreffer) {
+
+            gefunden.add(pokemon.id);
+
+            zeichne(pokemon);
         }
 
         eingabe.value = "";
+
         aktualisieren();
 
-        meldung.textContent = neue.length > 1
+
+        meldung.textContent = neueTreffer.length > 1
+
             ? "Beide Nidoran-Arten entdeckt!"
-            : `${neue[0].de} entdeckt!`;
 
-        if (gefunden.size === pool.length) {
+            : `${neueTreffer[0].de} entdeckt!`;
 
-            beendet = true;
-            timer.stop();
 
-            eingabe.disabled = true;
-            aufgeben.disabled = true;
+        if (anzahlErledigt() === pool.length) {
 
-            meldung.textContent =
-                `Geschafft! Alle ${pool.length} Pokémon erraten.`;
+            beenden();
 
         } else {
+
+            eingabe.focus();
+        }
+    }
+
+
+    /**
+     * Deckt genau das nächste Pokémon auf.
+     *
+     * Nicht im Hardcore-Modus verfügbar.
+     *
+     * @returns {void}
+     */
+    function einPokemonAufdecken() {
+
+        if (
+            !reihenfolge ||
+            beendet ||
+            hardcore?.checked
+        ) {
+            return;
+        }
+
+
+        // Das nächste noch nicht erledigte Pokémon
+        const pokemon = pool[naechster];
+
+        if (!pokemon) return;
+
+
+        // Aufgedeckt zählt nicht als richtig
+        aufgedeckt.add(pokemon.id);
+
+        zeichne(pokemon);
+
+        eingabe.value = "";
+
+        aktualisieren();
+
+
+        if (anzahlErledigt() === pool.length) {
+
+            beenden();
+
+        } else {
+
+            meldung.textContent =
+
+                `Hilfe: ${pokemon.de} ` +
+                `(#${pokemon.id}) aufgedeckt.`;
 
             eingabe.focus();
         }
@@ -305,66 +498,103 @@ function erstellePokedexModus(kontext, reihenfolge) {
      */
     function aufloesen() {
 
-        if (beendet) return;
+        if (beendet || hardcore?.checked) {
+            return;
+        }
 
-        beendet = true;
-        timer.stop();
+        for (const pokemon of pool) {
 
-        for (const p of pool) {
+            if (!gefunden.has(pokemon.id)) {
 
-            if (!gefunden.has(p.id)) {
+                aufgedeckt.add(pokemon.id);
 
-                offengelegt.add(p.id);
-                zeichne(p);
+                zeichne(pokemon);
             }
         }
 
-        eingabe.disabled = true;
-        aufgeben.disabled = true;
-        schatten.disabled = true;
-
-        meldung.textContent =
-            `Richtig: ${gefunden.size} · ` +
-            `Aufgedeckt: ${offengelegt.size}`;
-
-        aktualisieren();
+        beenden();
     }
 
 
-    // Karten erstellen und Eingaben verbinden
+    // =====================================
+    // EVENT-LISTENER
+    // =====================================
+
     erstelleRaster();
 
-    eingabe.addEventListener("input", pruefen);
+    eingabe.addEventListener(
+        "input",
+        pruefen
+    );
+
 
     schatten.addEventListener("change", () => {
 
         for (const pokemon of pool) {
 
             if (
+
                 !gefunden.has(pokemon.id) &&
-                !offengelegt.has(pokemon.id)
+
+                !aufgedeckt.has(pokemon.id)
+
             ) {
+
                 zeichne(pokemon);
             }
         }
     });
 
-    aufgeben.addEventListener("click", aufloesen);
+
+    // Hardcore-Wechsel startet eine frische Runde.
+    hardcore?.addEventListener("change", () => {
+
+        neu(
+
+            hardcore.checked
+
+                ? "Hardcore aktiviert: " +
+                  "keine Hilfen und keine Lösungen."
+
+                : "Normalmodus aktiviert: " +
+                  "Hilfen sind wieder verfügbar."
+        );
+    });
+
+
+    hinweisButton?.addEventListener(
+        "click",
+        einPokemonAufdecken
+    );
+
+    aufgebenButton.addEventListener(
+        "click",
+        aufloesen
+    );
 
     root.querySelector(".neu").addEventListener(
         "click",
         () => neu()
     );
 
+
+    // =====================================
+    // START
+    // =====================================
+
     neu();
 
+
     return {
+
         root,
 
         pause: timer.pause,
 
         resume() {
+
             if (!beendet) timer.resume();
+
             if (!beendet) eingabe.focus();
         },
 
@@ -373,13 +603,13 @@ function erstellePokedexModus(kontext, reihenfolge) {
 }
 
 
-/* =========================================
-   ÜBERSETZUNGSQUIZ
-   ========================================= */
+/* ================================================
+   POKÉMON-NAMEN ÜBERSETZEN
+   ================================================ */
 
 
 /**
- * Erstellt Deutsch → Englisch oder Englisch → Deutsch.
+ * Erstellt Deutsch -> Englisch oder Englisch -> Deutsch.
  *
  * @param {Object} kontext - Pokémon und Timeranzeige
  * @param {boolean} deNachEn - Übersetzungsrichtung
@@ -409,9 +639,11 @@ function erstelleUebersetzung(kontext, deNachEn) {
                spellcheck="false">
 
         <p class="meldung" role="status"></p>
+
         <p class="statistik"></p>
 
         <div class="aktionen">
+
             <button class="aufgeben" type="button">
                 Aufgeben / Lösung anzeigen
             </button>
@@ -419,31 +651,47 @@ function erstelleUebersetzung(kontext, deNachEn) {
             <button class="neu sekundaer" type="button">
                 Neustart
             </button>
+
         </div>
     `;
 
-    const anzeige = root.querySelector(".frage-name");
-    const eingabe = root.querySelector(".namen-eingabe");
-    const meldung = root.querySelector(".meldung");
-    const fortschritt = root.querySelector(".fortschritt");
-    const statistik = root.querySelector(".statistik");
-    const aufgeben = root.querySelector(".aufgeben");
+
+    const anzeige =
+        root.querySelector(".frage-name");
+
+    const eingabe =
+        root.querySelector(".namen-eingabe");
+
+    const meldung =
+        root.querySelector(".meldung");
+
+    const fortschritt =
+        root.querySelector(".fortschritt");
+
+    const statistik =
+        root.querySelector(".statistik");
+
+    const aufgebenButton =
+        root.querySelector(".aufgeben");
 
     const timer = erstelleStoppuhr(timerAnzeige);
 
+
     let liste = [];
+
     let index = 0;
     let richtig = 0;
     let aufgegeben = 0;
 
     let gesperrt = false;
     let beendet = false;
+
     let wechsel = null;
     let wartet = false;
 
 
     /**
-     * Zeigt das aktuelle Pokémon oder das Endergebnis.
+     * Zeigt die nächste Übersetzungsfrage.
      *
      * @returns {void}
      */
@@ -452,24 +700,32 @@ function erstelleUebersetzung(kontext, deNachEn) {
         wartet = false;
 
         statistik.textContent =
-            `Richtig: ${richtig} · Aufgegeben: ${aufgegeben}`;
+
+            `Richtig: ${richtig} · ` +
+            `Aufgegeben: ${aufgegeben}`;
+
 
         if (index >= liste.length) {
 
             beendet = true;
+
             timer.stop();
 
             anzeige.textContent = "Geschafft! 🎉";
+
             fortschritt.textContent =
                 `${liste.length} / ${liste.length}`;
 
             meldung.textContent =
-                `Richtig: ${richtig} · Aufgegeben: ${aufgegeben}`;
+                `Richtig: ${richtig} · ` +
+                `Aufgegeben: ${aufgegeben}`;
 
             eingabe.disabled = true;
-            aufgeben.disabled = true;
+            aufgebenButton.disabled = true;
+
             return;
         }
+
 
         const pokemon = liste[index];
 
@@ -481,20 +737,23 @@ function erstelleUebersetzung(kontext, deNachEn) {
             `Frage ${index + 1} / ${liste.length}`;
 
         gesperrt = false;
+
         eingabe.disabled = false;
-        aufgeben.disabled = false;
+        aufgebenButton.disabled = false;
 
         eingabe.value = "";
         meldung.textContent = "";
 
-        if (root.isConnected) eingabe.focus();
+        if (root.isConnected) {
+            eingabe.focus();
+        }
     }
 
 
     /**
-     * Beantwortet die aktuelle Frage.
+     * Schließt eine einzelne Frage ab.
      *
-     * @param {boolean} istAufgegeben
+     * @param {boolean} istAufgegeben - Aufgegeben?
      * @returns {void}
      */
     function beantworten(istAufgegeben) {
@@ -502,6 +761,7 @@ function erstelleUebersetzung(kontext, deNachEn) {
         if (gesperrt || beendet) return;
 
         const pokemon = liste[index];
+
         const loesung = deNachEn
             ? pokemon.en
             : pokemon.de;
@@ -509,7 +769,7 @@ function erstelleUebersetzung(kontext, deNachEn) {
         gesperrt = true;
 
         eingabe.disabled = true;
-        aufgeben.disabled = true;
+        aufgebenButton.disabled = true;
 
         if (istAufgegeben) {
             aufgegeben++;
@@ -517,14 +777,20 @@ function erstelleUebersetzung(kontext, deNachEn) {
             richtig++;
         }
 
+
         meldung.textContent =
+
             `${istAufgegeben ? "Lösung" : "Richtig"}: ` +
             loesung;
 
         index++;
 
+
         statistik.textContent =
-            `Richtig: ${richtig} · Aufgegeben: ${aufgegeben}`;
+
+            `Richtig: ${richtig} · ` +
+            `Aufgegeben: ${aufgegeben}`;
+
 
         if (index >= liste.length) {
             timer.stop();
@@ -533,14 +799,16 @@ function erstelleUebersetzung(kontext, deNachEn) {
         wartet = true;
 
         wechsel = setTimeout(() => {
+
             wechsel = null;
             anzeigen();
+
         }, istAufgegeben ? 1800 : 650);
     }
 
 
     /**
-     * Vergleicht die Eingabe mit dem Namen der Zielsprache.
+     * Prüft den eingegebenen Namen.
      *
      * @returns {void}
      */
@@ -550,27 +818,35 @@ function erstelleUebersetzung(kontext, deNachEn) {
 
         const pokemon = liste[index];
 
-        const korrekt = sucheNamen(
-            [pokemon],
-            eingabe.value,
-            deNachEn ? "en" : "de"
-        ).length > 0;
+        const treffer = sucheNamen(
 
-        if (korrekt) beantworten(false);
+            [pokemon],
+
+            eingabe.value,
+
+            deNachEn ? "en" : "de"
+        );
+
+        if (treffer.length) {
+
+            beantworten(false);
+        }
     }
 
 
     /**
-     * Startet eine neue Runde.
+     * Startet die Namensübersetzung neu.
      *
      * @returns {void}
      */
     function neu() {
 
         clearTimeout(wechsel);
+
         wechsel = null;
 
         liste = mische(pool);
+
         index = 0;
         richtig = 0;
         aufgegeben = 0;
@@ -580,12 +856,18 @@ function erstelleUebersetzung(kontext, deNachEn) {
         wartet = false;
 
         timer.start();
+
         anzeigen();
     }
 
+
+    // =====================================
+    // EVENTS UND START
+    // =====================================
+
     eingabe.addEventListener("input", pruefen);
 
-    aufgeben.addEventListener(
+    aufgebenButton.addEventListener(
         "click",
         () => beantworten(true)
     );
@@ -597,25 +879,35 @@ function erstelleUebersetzung(kontext, deNachEn) {
 
     neu();
 
+
     return {
+
         root,
 
         pause() {
+
             timer.pause();
+
             clearTimeout(wechsel);
+
             wechsel = null;
         },
 
         resume() {
 
             if (wartet) anzeigen();
+
             if (!beendet) timer.resume();
 
-            if (!beendet && !gesperrt) eingabe.focus();
+            if (!beendet && !gesperrt) {
+                eingabe.focus();
+            }
         },
 
         dispose() {
+
             clearTimeout(wechsel);
+
             timer.dispose();
         }
     };
