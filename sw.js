@@ -3,12 +3,10 @@
    SERVICE WORKER – QUIZ-WELT
    ========================================= */
 
-// Bei Änderungen an den lokalen Dateien
-// die Versionsnummer erhöhen.
-const CACHE_NAME = "quiz-welt-v1";
+const CACHE_NAME = "quiz-welt-v3";
 
 
-// Dateien, die lokal gespeichert werden sollen
+// Lokale Dateien speichern
 const DATEIEN = [
     "./",
     "./index.html",
@@ -23,8 +21,12 @@ const DATEIEN = [
     "./js/onepiece-daten.js",
     "./js/onepiece-episoden.js",
     "./js/attacken-daten.js",
+
     "./js/hilfe.js",
     "./js/timer.js",
+
+    // NEU
+    "./js/vorschlaege.js",
 
     "./js/modi-namen.js",
     "./js/modi-typen.js",
@@ -36,7 +38,7 @@ const DATEIEN = [
 
 
 // =========================================
-// 1. APP-DATEIEN SPEICHERN
+// DATEIEN VORAB SPEICHERN
 // =========================================
 
 self.addEventListener("install", event => {
@@ -44,9 +46,9 @@ self.addEventListener("install", event => {
     event.waitUntil(
 
         caches.open(CACHE_NAME).then(cache => {
+
             return cache.addAll(DATEIEN);
         })
-
     );
 
     self.skipWaiting();
@@ -54,7 +56,7 @@ self.addEventListener("install", event => {
 
 
 // =========================================
-// 2. ALTE CACHE-VERSIONEN ENTFERNEN
+// ALTE CACHE-VERSIONEN ENTFERNEN
 // =========================================
 
 self.addEventListener("activate", event => {
@@ -68,13 +70,13 @@ self.addEventListener("activate", event => {
                 namen
 
                     .filter(name =>
+
                         name.startsWith("quiz-welt-") &&
+
                         name !== CACHE_NAME
                     )
 
-                    .map(name =>
-                        caches.delete(name)
-                    )
+                    .map(name => caches.delete(name))
             );
         })
     );
@@ -84,36 +86,36 @@ self.addEventListener("activate", event => {
 
 
 // =========================================
-// 3. DATEIEN LADEN
+// DATEIEN LADEN
 // =========================================
 
 self.addEventListener("fetch", event => {
 
-    // Nur GET-Anfragen bearbeiten
     if (event.request.method !== "GET") {
         return;
     }
 
     const url = new URL(event.request.url);
 
-    // Externe APIs und Bilder nicht abfangen.
-    // Dafür gelten eigene Lade- und Cache-Regeln.
+
+    // Externe APIs und Bilder nicht abfangen
     if (url.origin !== self.location.origin) {
         return;
     }
+
 
     event.respondWith((async () => {
 
         try {
 
-            // Zuerst aktuelle Datei vom Server versuchen
+            // Aktuelle Datei vom Server laden
             const antwort = await fetch(event.request);
+
 
             if (antwort.ok) {
 
-                const cache = await caches.open(
-                    CACHE_NAME
-                );
+                const cache =
+                    await caches.open(CACHE_NAME);
 
                 await cache.put(
                     event.request,
@@ -125,24 +127,27 @@ self.addEventListener("fetch", event => {
 
         } catch {
 
-            // Falls Internet fehlt:
-            // Gespeicherte lokale Datei verwenden.
-            const gespeichert = await caches.match(
-                event.request
-            );
+            // Falls kein Internet vorhanden:
+            // Datei aus dem Cache verwenden
+            const gespeichert =
+                await caches.match(event.request);
 
             if (gespeichert) {
+
                 return gespeichert;
             }
 
-            // Bei Seitennavigation auf index.html fallen
+
+            // Fallback für die Startseite
             if (event.request.mode === "navigate") {
 
-                const startseite = await caches.match(
-                    "./index.html"
-                );
+                const startseite =
+                    await caches.match("./index.html");
 
-                if (startseite) return startseite;
+                if (startseite) {
+
+                    return startseite;
+                }
             }
 
             return Response.error();
