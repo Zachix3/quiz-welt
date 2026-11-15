@@ -1,21 +1,16 @@
 
-/* ====================================================
-   ATTACKENQUIZ – NORMAL, HARDCORE UND ÜBUNGSMODUS
+/* =====================================================
+   ATTACKENQUIZ – ZUFALL, ÜBUNG, NORMAL UND HARDCORE
 
-   Alle sechs Attacken-Spielmodi werden unterstützt.
+   Eine Attacke aufdecken:
+   - bei "Welche Attacken lernt dieses Pokémon?"
+   - im normalen Zufallsmodus und Übungsmodus
+   - frei: zufällige fehlende Attacke
+   - Reihenfolge: nächste fehlende Attacke
+   - zählt nicht als richtige Antwort
+   - löst keinen Hardcore-Neustart aus
+   ===================================================== */
 
-   Übungsmodus:
-   - Übersetzungen: gezielte Attacke
-   - Wer lernt Attacke X?: gezielte Attacke
-   - Welche Attacken lernt Pokémon Y?: gezieltes Pokémon
-
-   Hardcore:
-   Falsche, mit Enter bestätigte Antworten setzen
-   den Fortschritt zurück. Das Übungsziel bleibt gleich.
-   ==================================================== */
-
-
-// Für eindeutige HTML-IDs der Vorschlagslisten
 let attackenModusZaehler = 0;
 
 
@@ -26,7 +21,7 @@ let attackenModusZaehler = 0;
  * Enthält pool, maxGen und timerAnzeige.
  *
  * @param {string} modus
- * Kennung des gewählten Spielmodus.
+ * Kennung des Spielmodus aus app.js.
  *
  * @returns {Object}
  * Spielsitzung mit root, pause, resume und dispose.
@@ -48,16 +43,17 @@ function erstelleAttackenModus(kontext, modus) {
 
     const reihenfolge = modus.endsWith("-reihe");
 
-    // Bei welchen Modi wählt man eine Attacke
-    // statt eines Pokémon als Übungsziel?
+    // Diese beiden Modi bekommen den Hinweis-Button.
+    const attackenRaten = !uebersetzung && !werLernt;
+
     const zielIstAttacke = uebersetzung || werLernt;
 
-    const listeId =
-        `attacken-trainingsliste-${++attackenModusZaehler}`;
+    const listenId =
+        `attacken-uebung-${++attackenModusZaehler}`;
 
 
     // ====================================
-    // 2. HTML ERZEUGEN
+    // 2. HTML ERSTELLEN
     // ====================================
 
     const root = document.createElement("div");
@@ -70,7 +66,8 @@ function erstelleAttackenModus(kontext, modus) {
 
         <!-- SPIELEINSTELLUNGEN -->
 
-        <div class="einstellungen quiz-einstellungen" hidden>
+        <div class="einstellungen quiz-einstellungen"
+             hidden>
 
             <h3>Spiel einstellen</h3>
 
@@ -78,42 +75,35 @@ function erstelleAttackenModus(kontext, modus) {
                 Schwierigkeit:
 
                 <select class="schwierigkeit">
-                    <option value="normal">
-                        Normal
-                    </option>
-
-                    <option value="hardcore">
-                        Hardcore
-                    </option>
+                    <option value="normal">Normal</option>
+                    <option value="hardcore">Hardcore</option>
                 </select>
             </label>
 
             <label class="uebung-label">
-
                 <input class="uebung-aktiv"
                        type="checkbox">
 
-                Übungsmodus – gezielte Aufgabe wählen
+                Übungsmodus – Aufgabe gezielt auswählen
             </label>
 
             <div class="uebungs-auswahl" hidden>
 
-                <label class="uebungs-beschriftung"
-                       for="${listeId}-eingabe"></label>
+                <label for="${listenId}"></label>
 
-                <input class="uebungs-eingabe"
-                       id="${listeId}-eingabe"
-                       list="${listeId}"
+                <input id="${listenId}"
+                       class="uebungs-eingabe"
+                       list="${listenId}-vorschlaege"
                        type="text"
                        autocomplete="off"
                        spellcheck="false"
-                       placeholder="Namen eingeben oder auswählen …">
+                       placeholder="Pokémon oder Attacke auswählen …">
 
-                <datalist id="${listeId}"></datalist>
+                <datalist id="${listenId}-vorschlaege">
+                </datalist>
 
                 <p class="hinweis">
-                    Du kannst den deutschen oder
-                    englischen Namen eingeben.
+                    Deutscher oder englischer Name möglich.
                 </p>
             </div>
 
@@ -174,15 +164,25 @@ function erstelleAttackenModus(kontext, modus) {
 
             <div class="aktionen">
 
+                ${attackenRaten ? `
+                    <button class="einzelhinweis sekundaer"
+                            type="button">
+                        Eine Attacke aufdecken
+                    </button>
+                ` : ""}
+
                 <button class="aufgeben" type="button">
-                    Aufgeben / Lösung anzeigen
+                    Aufgeben / alle Lösungen
                 </button>
 
-                <button class="neu sekundaer" type="button">
+                <button class="neu sekundaer"
+                        type="button">
                     Neue Runde
                 </button>
 
-                <button class="naechstes" type="button" hidden>
+                <button class="naechstes"
+                        type="button"
+                        hidden>
                     Neue Aufgabe
                 </button>
 
@@ -190,6 +190,7 @@ function erstelleAttackenModus(kontext, modus) {
                         type="button">
                     Spielart / Übung ändern
                 </button>
+
             </div>
         </div>
     `;
@@ -217,8 +218,8 @@ function erstelleAttackenModus(kontext, modus) {
     const uebungAuswahl =
         root.querySelector(".uebungs-auswahl");
 
-    const uebungBeschriftung =
-        root.querySelector(".uebungs-beschriftung");
+    const uebungLabel =
+        root.querySelector(".uebungs-auswahl label");
 
     const uebungEingabe =
         root.querySelector(".uebungs-eingabe");
@@ -247,7 +248,7 @@ function erstelleAttackenModus(kontext, modus) {
     const fortschritt =
         root.querySelector(".fortschritt");
 
-    const antwortFormular =
+    const formular =
         root.querySelector(".antwort-form");
 
     const eingabe =
@@ -258,6 +259,9 @@ function erstelleAttackenModus(kontext, modus) {
 
     const raster =
         root.querySelector(".antwort-raster");
+
+    const hinweisButton =
+        root.querySelector(".einzelhinweis");
 
     const aufgebenButton =
         root.querySelector(".aufgeben");
@@ -282,22 +286,19 @@ function erstelleAttackenModus(kontext, modus) {
     let gruppenId = null;
     let methode = "alle";
 
-    let spielBereit = false;
+    let bereit = false;
     let spielLaeuft = false;
 
     let beendet = false;
     let gesperrt = false;
+
     let pausiert = false;
     let entsorgt = false;
 
     let weiterTimer = null;
-    let wartetAufNaechsteFrage = false;
+    let wartet = false;
 
-    // Im Übungsmodus das gezielt gewählte Pokémon
-    // beziehungsweise die gezielt gewählte Attacke.
     let trainingsZiel = null;
-
-    // Speichert die Aufgabe für Hardcore-Neustarts.
     let letzteAufgabe = null;
 
     let ziele = [];
@@ -305,25 +306,34 @@ function erstelleAttackenModus(kontext, modus) {
 
     let position = 0;
 
+    // Richtig erratene Antworten
     let gefunden = new Set();
-    let aufgegeben = new Set();
 
+    // Mit Hilfe oder Aufgeben aufgedeckte Antworten
+    let aufgedeckt = new Set();
 
-    // Zwischenspeicher für häufig benötigte Lernsets
+    // Zwischenspeicher für die Lernsets
     const lernsetCache = new Map();
-    const kandidatenCache = new Map();
+
+    const zuordnungCache = new Map();
 
 
     // ====================================
-    // 5. ÜBUNGSAUSWAHL ERSTELLEN
+    // 5. ÜBUNGSLISTE AUFBAUEN
     // ====================================
 
     /**
-     * Erstellt die Vorschlagsliste für den Übungsmodus.
+     * Erstellt Namensvorschläge für den Übungsmodus.
+     *
+     * Bei Übersetzungen und "Wer lernt X?"
+     * werden Attacken angeboten.
+     *
+     * Bei "Welche Attacken lernt Y?"
+     * werden Pokémon angeboten.
      *
      * @returns {void}
      */
-    function baueUebungsListe() {
+    function baueUebungsliste() {
 
         uebungListe.replaceChildren();
 
@@ -344,11 +354,8 @@ function erstelleAttackenModus(kontext, modus) {
 
             option.value = kandidat.de;
 
-            option.label = zielIstAttacke
-
-                ? `${kandidat.en} · Attacke #${kandidat.id}`
-
-                : `${kandidat.en} · Pokédex #${kandidat.id}`;
+            option.label =
+                `${kandidat.en} · #${kandidat.id}`;
 
             fragment.appendChild(option);
         }
@@ -358,23 +365,19 @@ function erstelleAttackenModus(kontext, modus) {
 
 
     // ====================================
-    // 6. AUSGEWÄHLTES ÜBUNGSZIEL FINDEN
+    // 6. TRAININGSZIEL FINDEN
     // ====================================
 
     /**
-     * Sucht das vom Spieler gewählte Pokémon
-     * oder die gewählte Attacke.
+     * Sucht das gewählte Pokémon bzw. die Attacke.
      *
      * @returns {Object|null}
      * Eindeutiger Treffer oder null.
      */
     function holeTrainingsZiel() {
 
-        const name = normalisiere(
-            uebungEingabe.value
-        );
-
-        if (!name) return null;
+        const eingegeben =
+            normalisiere(uebungEingabe.value);
 
         const kandidaten = zielIstAttacke
 
@@ -384,13 +387,13 @@ function erstelleAttackenModus(kontext, modus) {
 
             : pool;
 
-        const treffer = kandidaten.filter(kandidat =>
+        const passende = kandidaten.filter(kandidat =>
 
-            normalisiere(kandidat.de) === name
+            normalisiere(kandidat.de) === eingegeben
 
             ||
 
-            normalisiere(kandidat.en) === name
+            normalisiere(kandidat.en) === eingegeben
 
             ||
 
@@ -398,9 +401,8 @@ function erstelleAttackenModus(kontext, modus) {
                 uebungEingabe.value.trim()
         );
 
-        // Nur eindeutige Treffer akzeptieren.
-        return treffer.length === 1
-            ? treffer[0]
+        return passende.length === 1
+            ? passende[0]
             : null;
     }
 
@@ -410,7 +412,7 @@ function erstelleAttackenModus(kontext, modus) {
     // ====================================
 
     /**
-     * Öffnet die Konfiguration und pausiert das Spiel.
+     * Öffnet die Spieleinstellungen und pausiert.
      *
      * @returns {void}
      */
@@ -431,7 +433,7 @@ function erstelleAttackenModus(kontext, modus) {
 
 
     // ====================================
-    // 8. SPIEL MIT EINSTELLUNGEN STARTEN
+    // 8. SPIEL STARTEN
     // ====================================
 
     /**
@@ -439,9 +441,9 @@ function erstelleAttackenModus(kontext, modus) {
      *
      * @returns {void}
      */
-    function spieleMitEinstellungen() {
+    function starteMitEinstellungen() {
 
-        if (!spielBereit) return;
+        if (!bereit) return;
 
         trainingsZiel = null;
 
@@ -452,8 +454,8 @@ function erstelleAttackenModus(kontext, modus) {
             if (!trainingsZiel) {
 
                 einstellungsMeldung.textContent =
-                    "Bitte wähle einen eindeutigen Pokémon- " +
-                    "bzw. Attackennamen aus der Liste.";
+                    "Bitte einen eindeutigen Pokémon- " +
+                    "oder Attackennamen auswählen.";
 
                 return;
             }
@@ -463,6 +465,7 @@ function erstelleAttackenModus(kontext, modus) {
         spiel.hidden = false;
 
         spielLaeuft = true;
+        letzteAufgabe = null;
 
         laufendeEinstellungen.textContent =
 
@@ -472,12 +475,12 @@ function erstelleAttackenModus(kontext, modus) {
                     : "Normal"
             )
 
-            +
+            + " · " +
 
             (
                 trainingsZiel
-                    ? ` · Übung: ${trainingsZiel.de}`
-                    : " · Zufallsmodus"
+                    ? `Übung: ${trainingsZiel.de}`
+                    : "Zufallsmodus"
             );
 
         neueRunde(true);
@@ -485,15 +488,15 @@ function erstelleAttackenModus(kontext, modus) {
 
 
     // ====================================
-    // 9. ATTACKEN EINES POKÉMON SUCHEN
+    // 9. ATTACKEN EINES POKÉMON
     // ====================================
 
     /**
-     * Liefert die gültigen Attacken in der Edition
-     * und verwendet einen Zwischenspeicher.
+     * Liefert alle Attacken eines Pokémon für die
+     * ausgewählte Edition und Lernmethode.
      *
-     * @param {Object} pokemon - Pokémon
-     * @returns {Object[]} Attacken mit Lernlevel
+     * @param {Object} pokemon - Pokémon-Objekt
+     * @returns {Object[]} Lernbare Attacken
      */
     function attackenVon(pokemon) {
 
@@ -522,23 +525,22 @@ function erstelleAttackenModus(kontext, modus) {
 
 
     // ====================================
-    // 10. ATTACKE -> POKÉMON-ZUORDNUNG
+    // 10. POKÉMON NACH ATTACKE GRUPPIEREN
     // ====================================
 
     /**
-     * Ordnet jeder Attacke alle Pokémon zu,
-     * die diese in der gewählten Edition lernen.
+     * Ermittelt, welche Pokémon eine Attacke lernen.
      *
      * @returns {Map<number, Object[]>}
-     * Attacken-ID -> Pokémon-Array
+     * Attacken-ID -> Liste mit Pokémon.
      */
-    function werLerntWelcheAttacke() {
+    function pokemonNachAttacke() {
 
-        const key =
-            `${gruppenId}:${methode}`;
+        const key = `${gruppenId}:${methode}`;
 
-        if (kandidatenCache.has(key)) {
-            return kandidatenCache.get(key);
+        if (zuordnungCache.has(key)) {
+
+            return zuordnungCache.get(key);
         }
 
         const zuordnung = new Map();
@@ -548,6 +550,7 @@ function erstelleAttackenModus(kontext, modus) {
             for (const attacke of attackenVon(pokemon)) {
 
                 if (!zuordnung.has(attacke.id)) {
+
                     zuordnung.set(attacke.id, []);
                 }
 
@@ -555,7 +558,7 @@ function erstelleAttackenModus(kontext, modus) {
             }
         }
 
-        kandidatenCache.set(key, zuordnung);
+        zuordnungCache.set(key, zuordnung);
 
         return zuordnung;
     }
@@ -566,7 +569,8 @@ function erstelleAttackenModus(kontext, modus) {
     // ====================================
 
     /**
-     * Sortiert die Antworten für den Reihenfolge-Modus.
+     * Sortiert nach Nationaldex, Lernlevel
+     * oder deutschem Attackennamen.
      *
      * @returns {void}
      */
@@ -576,24 +580,25 @@ function erstelleAttackenModus(kontext, modus) {
 
         if (werLernt) {
 
-            // Pokémon nach Nationaldex-Nummer
             ziele.sort((a, b) => a.id - b.id);
 
         } else if (methode === "level") {
 
-            // Attacken nach Lernlevel
             ziele.sort((a, b) =>
 
-                a.level - b.level ||
+                a.level - b.level
 
-                a.reihenfolge - b.reihenfolge ||
+                ||
+
+                a.reihenfolge - b.reihenfolge
+
+                ||
 
                 a.id - b.id
             );
 
         } else {
 
-            // Andere Lernmethoden alphabetisch
             ziele.sort((a, b) =>
                 a.de.localeCompare(b.de, "de")
             );
@@ -602,29 +607,52 @@ function erstelleAttackenModus(kontext, modus) {
 
 
     // ====================================
-    // 12. NÄCHSTE OFFENE ANTWORT
+    // 12. NOCH FEHLENDE ANTWORTEN
     // ====================================
 
     /**
-     * Findet die nächste noch nicht erratene Antwort.
+     * Liefert Antworten, die weder richtig erraten
+     * noch durch Hilfe aufgedeckt wurden.
      *
-     * @returns {Object|undefined}
+     * @returns {Object[]} Noch fehlende Antworten
      */
-    function naechstesZiel() {
+    function fehlendeZiele() {
 
-        return ziele.find(ziel =>
+        return ziele.filter(ziel =>
+
             !gefunden.has(ziel.id)
+
+            &&
+
+            !aufgedeckt.has(ziel.id)
         );
     }
 
 
     // ====================================
-    // 13. ERGEBNISRASTER ZEICHNEN
+    // 13. NÄCHSTE ANTWORT
     // ====================================
 
     /**
-     * Zeigt Fragezeichen, gefundene und aufgegebene
-     * Antworten sowie die Lernlevel.
+     * Liefert die nächste offene Antwort.
+     *
+     * Aufgedeckte Attacken werden übersprungen.
+     *
+     * @returns {Object|undefined}
+     */
+    function naechstesZiel() {
+
+        return fehlendeZiele()[0];
+    }
+
+
+    // ====================================
+    // 14. ANTWORTKARTEN ZEICHNEN
+    // ====================================
+
+    /**
+     * Zeichnet Fragezeichen, gefundene und
+     * aufgedeckte Antworten.
      *
      * @returns {void}
      */
@@ -647,18 +675,19 @@ function erstelleAttackenModus(kontext, modus) {
 
             const richtig = gefunden.has(ziel.id);
 
-            const offengelegt =
-                aufgegeben.has(ziel.id);
+            const hilfe = aufgedeckt.has(ziel.id);
 
 
             // --------------------------------
-            // Gefundenes Pokémon oder Attacke
+            // A. Bereits bekannte Antwort
             // --------------------------------
 
-            if (richtig || offengelegt) {
+            if (richtig || hilfe) {
 
                 karte.classList.add(
-                    richtig ? "gefunden" : "aufgedeckt"
+                    richtig
+                        ? "gefunden"
+                        : "aufgedeckt"
                 );
 
                 if (werLernt) {
@@ -669,58 +698,68 @@ function erstelleAttackenModus(kontext, modus) {
                     inhalt.appendChild(bild);
                 }
 
-                const text = document.createElement("span");
-                text.className = "mini-name";
-                text.textContent = ziel.de;
+                const name = document.createElement("span");
 
-                inhalt.appendChild(text);
+                name.className = "mini-name";
+                name.textContent = ziel.de;
+
+                inhalt.appendChild(name);
 
             } else {
 
-                // Noch unbekannte Antwort
-                const text = document.createElement("span");
-                text.className = "fragezeichen";
-                text.textContent = "?";
+                // --------------------------------
+                // B. Unbekannte Antwort
+                // --------------------------------
 
-                inhalt.appendChild(text);
+                const unbekannt =
+                    document.createElement("span");
+
+                unbekannt.className = "fragezeichen";
+                unbekannt.textContent = "?";
+
+                inhalt.appendChild(unbekannt);
             }
 
 
             // --------------------------------
-            // Lernlevel zusätzlich anzeigen
+            // C. Lernlevel anzeigen
             // --------------------------------
 
-            if (!werLernt && methode === "level") {
+            if (
+                attackenRaten &&
+                methode === "level"
+            ) {
 
-                const level =
+                const lernlevel =
                     document.createElement("span");
 
-                level.className = "zeit-etikett";
+                lernlevel.className = "zeit-etikett";
 
-                level.textContent =
+                lernlevel.textContent =
                     ziel.level === 0
 
                         ? "Start / Level 0"
 
                         : `Level ${ziel.level}`;
 
-                inhalt.appendChild(level);
+                inhalt.appendChild(lernlevel);
             }
 
 
             // --------------------------------
-            // Aktuell gesuchte Antwort markieren
+            // D. Aktuelle Antwort markieren
             // --------------------------------
 
             if (
                 reihenfolge &&
                 !richtig &&
-                !offengelegt &&
+                !hilfe &&
                 !beendet
             ) {
 
                 const istAktuell =
-                    !werLernt && methode === "level"
+                    attackenRaten &&
+                    methode === "level"
 
                         ? ziel.level === erwartet?.level
 
@@ -739,28 +778,32 @@ function erstelleAttackenModus(kontext, modus) {
 
         raster.appendChild(fragment);
 
+
+        // Gefundene und aufgedeckte getrennt zählen
         meldung.dataset.fortschritt =
-            `${gefunden.size} / ${ziele.length}`;
+
+            `${gefunden.size} richtig · ` +
+            `${aufgedeckt.size} aufgedeckt / ` +
+            `${ziele.length}`;
     }
 
 
     // ====================================
-    // 14. AKTUELLE FRAGE ANZEIGEN
+    // 15. FRAGE ANZEIGEN
     // ====================================
 
     /**
-     * Zeigt Übersetzung, Attacke oder Pokémon
-     * abhängig vom ausgewählten Spielmodus.
+     * Zeigt die aktuelle Aufgabe.
      *
      * @returns {void}
      */
     function zeigeFrage() {
 
-        wartetAufNaechsteFrage = false;
+        wartet = false;
 
 
         // --------------------------------
-        // Attackennamen übersetzen
+        // A. ÜBERSETZUNG
         // --------------------------------
 
         if (uebersetzung) {
@@ -790,7 +833,7 @@ function erstelleAttackenModus(kontext, modus) {
 
 
         // --------------------------------
-        // Welche Pokémon lernen Attacke X?
+        // B. WELCHE POKÉMON LERNEN ATTACKE X?
         // --------------------------------
 
         } else if (werLernt) {
@@ -805,13 +848,13 @@ function erstelleAttackenModus(kontext, modus) {
 
                 ? "Nationaldex-Reihenfolge"
 
-                : "Passende Pokémon frei erraten";
+                : "Pokémon in beliebiger Reihenfolge";
 
             zeichneRaster();
 
 
         // --------------------------------
-        // Welche Attacken lernt Pokémon Y?
+        // C. WELCHE ATTACKEN LERNT POKÉMON Y?
         // --------------------------------
 
         } else {
@@ -842,14 +885,19 @@ function erstelleAttackenModus(kontext, modus) {
 
                 ? methode === "level"
 
-                    ? "Nach Lernlevel; auf gleichem Level frei wählbar"
+                    ? "Nach Lernlevel – gleicher Level frei wählbar"
 
-                    : "Alphabetische Reihenfolge (Deutsch)"
+                    : "Alphabetisch nach deutschem Attackennamen"
 
-                : "Attacken frei erraten";
+                : "Attacken in beliebiger Reihenfolge";
 
             zeichneRaster();
         }
+
+
+        // --------------------------------
+        // D. EINGABE FREIGEBEN
+        // --------------------------------
 
         gesperrt = false;
 
@@ -858,54 +906,59 @@ function erstelleAttackenModus(kontext, modus) {
 
         aufgebenButton.disabled = false;
 
+        if (hinweisButton) {
+
+            hinweisButton.disabled = false;
+        }
+
         if (root.isConnected && !pausiert) {
+
             eingabe.focus();
         }
     }
 
 
     // ====================================
-    // 15. RUNDE STARTEN ODER ZURÜCKSETZEN
+    // 16. NEUE RUNDE
     // ====================================
 
     /**
-     * Startet eine neue Runde.
+     * Startet entweder eine neue oder dieselbe Aufgabe.
      *
      * @param {boolean} neueAufgabe
-     * true  = neue Zufallsaufgabe
-     * false = gleiche Aufgabe erneut
+     * true  = Neue Zufallsaufgabe
+     * false = Dieselbe Aufgabe erneut
      *
      * @param {string} grund
-     * Optionale Meldung nach dem Zurücksetzen.
+     * Optionale Meldung nach einem Neustart.
      *
      * @returns {void}
      */
     function neueRunde(neueAufgabe = true, grund = "") {
 
-        if (!spielBereit || !spielLaeuft) return;
+        if (!bereit || !spielLaeuft) return;
 
         clearTimeout(weiterTimer);
         weiterTimer = null;
 
-        wartetAufNaechsteFrage = false;
+        wartet = false;
 
         gefunden = new Set();
-        aufgegeben = new Set();
+        aufgedeckt = new Set();
 
         position = 0;
 
         beendet = false;
         gesperrt = false;
 
-        aufgebenButton.disabled = false;
-        naechstesButton.hidden = true;
-
         ziele = [];
         aktuelleFrage = null;
 
+        naechstesButton.hidden = true;
+
 
         // --------------------------------
-        // A. ÜBERSETZUNGSQUIZ
+        // A. ATTACKEN ÜBERSETZEN
         // --------------------------------
 
         if (uebersetzung) {
@@ -936,12 +989,12 @@ function erstelleAttackenModus(kontext, modus) {
 
 
         // --------------------------------
-        // B. WER LERNT DIESE ATTACKE?
+        // B. WER LERNT ATTACKE X?
         // --------------------------------
 
         } else if (werLernt) {
 
-            const zuordnung = werLerntWelcheAttacke();
+            const zuordnung = pokemonNachAttacke();
 
             const ids = [...zuordnung.keys()];
 
@@ -953,15 +1006,15 @@ function erstelleAttackenModus(kontext, modus) {
                     ? letzteAufgabe.id
 
                     : ids[
-                        Math.floor(Math.random() * ids.length)
+                        Math.floor(
+                            Math.random() * ids.length
+                        )
                     ]
             );
 
             aktuelleFrage = daten.nachId.get(id);
 
-            ziele = [
-                ...(zuordnung.get(id) || [])
-            ];
+            ziele = [...(zuordnung.get(id) || [])];
 
             letzteAufgabe = { id };
 
@@ -1009,7 +1062,7 @@ function erstelleAttackenModus(kontext, modus) {
 
 
         // --------------------------------
-        // D. KEINE PASSENDEN DATEN
+        // D. KEINE PASSENDEN AUFGABEN
         // --------------------------------
 
         if (
@@ -1020,26 +1073,35 @@ function erstelleAttackenModus(kontext, modus) {
             beendet = true;
             timer.stop();
 
-            eingabe.disabled = true;
-            aufgebenButton.disabled = true;
-
-            frage.textContent = "Keine passenden Antworten";
             frage.hidden = false;
             pokemonFrage.hidden = true;
 
+            frage.textContent =
+                "Keine passenden Aufgaben";
+
             raster.replaceChildren();
 
+            eingabe.disabled = true;
+            aufgebenButton.disabled = true;
+
+            if (hinweisButton) {
+
+                hinweisButton.disabled = true;
+            }
+
             meldung.textContent =
-                "Für dieses Übungsziel gibt es in der gewählten " +
-                "Edition und Lernmethode keine Einträge. " +
-                "Ändere die Edition/Lernmethode oder deine Übungsauswahl.";
+                "Für diese Edition und Lernmethode gibt " +
+                "es keine passenden Antworten. " +
+                "Bitte die Auswahl ändern.";
+
+            meldung.dataset.fortschritt = "";
 
             return;
         }
 
 
         // --------------------------------
-        // E. SORTIEREN UND TIMER STARTEN
+        // E. SORTIEREN UND STARTEN
         // --------------------------------
 
         sortiereZiele();
@@ -1047,6 +1109,7 @@ function erstelleAttackenModus(kontext, modus) {
         timer.start();
 
         if (pausiert) {
+
             timer.pause();
         }
 
@@ -1057,11 +1120,11 @@ function erstelleAttackenModus(kontext, modus) {
 
 
     // ====================================
-    // 16. RUNDE BEENDEN
+    // 17. RUNDE BEENDEN
     // ====================================
 
     /**
-     * Stoppt die Runde und zeigt die Statistik.
+     * Stoppt die Runde und zeigt das Ergebnis.
      *
      * @returns {void}
      */
@@ -1075,6 +1138,11 @@ function erstelleAttackenModus(kontext, modus) {
         eingabe.disabled = true;
         aufgebenButton.disabled = true;
 
+        if (hinweisButton) {
+
+            hinweisButton.disabled = true;
+        }
+
         naechstesButton.hidden = false;
 
         naechstesButton.textContent = trainingsZiel
@@ -1084,19 +1152,15 @@ function erstelleAttackenModus(kontext, modus) {
             : "Neue Aufgabe";
 
         meldung.textContent =
-            `Richtig: ${gefunden.size} / ${ziele.length}`
 
-            +
-
-            (
-                aufgegeben.size
-                    ? ` · Aufgedeckt: ${aufgegeben.size}`
-                    : ""
-            );
+            `Fertig! ${gefunden.size} richtig, ` +
+            `${aufgedeckt.size} aufgedeckt ` +
+            `(${ziele.length} insgesamt).`;
 
         if (uebersetzung) {
 
-            frage.textContent = "Runde abgeschlossen!";
+            frage.textContent =
+                "Runde abgeschlossen!";
 
             fortschritt.textContent =
                 `${ziele.length} / ${ziele.length}`;
@@ -1105,22 +1169,24 @@ function erstelleAttackenModus(kontext, modus) {
 
 
     // ====================================
-    // 17. ÜBERSETZUNGSFRAGE BEENDEN
+    // 18. ÜBERSETZUNGSFRAGE BEENDEN
     // ====================================
 
     /**
-     * Beendet eine einzelne Übersetzungsfrage.
+     * Schließt eine einzelne Übersetzungsfrage ab.
      *
-     * @param {boolean} richtig - Richtige Antwort?
+     * @param {boolean} richtig
+     * War die Antwort korrekt?
+     *
      * @returns {void}
      */
-    function beendeUebersetzungsFrage(richtig) {
+    function beendeUebersetzung(richtig) {
 
         if (beendet || gesperrt) return;
 
         const attacke = ziele[position];
 
-        const loesung =
+        const antwort =
             modus === "attacke-de-en"
 
                 ? attacke.en
@@ -1138,25 +1204,27 @@ function erstelleAttackenModus(kontext, modus) {
 
         } else {
 
-            aufgegeben.add(attacke.id);
+            aufgedeckt.add(attacke.id);
         }
 
         meldung.textContent =
-            `${richtig ? "Richtig" : "Lösung"}: ${loesung}`;
+            `${richtig ? "Richtig" : "Lösung"}: ${antwort}`;
 
         position++;
 
         if (position >= ziele.length) {
+
             timer.stop();
         }
 
-        wartetAufNaechsteFrage = true;
+        wartet = true;
 
         weiterTimer = setTimeout(() => {
 
             weiterTimer = null;
 
             if (!pausiert) {
+
                 zeigeFrage();
             }
 
@@ -1165,14 +1233,14 @@ function erstelleAttackenModus(kontext, modus) {
 
 
     // ====================================
-    // 18. ANTWORT PRÜFEN
+    // 19. ANTWORT PRÜFEN
     // ====================================
 
     /**
-     * Prüft die eingegebene Antwort.
+     * Prüft den eingegebenen Namen.
      *
      * @param {boolean} bestaetigt
-     * false = automatische Prüfung beim Tippen
+     * false = Prüfung während des Tippens
      * true  = Enter oder Prüfen gedrückt
      *
      * @returns {void}
@@ -1180,19 +1248,20 @@ function erstelleAttackenModus(kontext, modus) {
     function pruefeAntwort(bestaetigt = false) {
 
         if (
-            !spielBereit ||
+            !bereit ||
             !spielLaeuft ||
             beendet ||
             gesperrt ||
             eingabe.disabled ||
             pausiert
         ) {
+
             return;
         }
 
-        const name = normalisiere(eingabe.value);
+        const text = normalisiere(eingabe.value);
 
-        if (!name) {
+        if (!text) {
 
             if (bestaetigt) {
 
@@ -1205,14 +1274,14 @@ function erstelleAttackenModus(kontext, modus) {
 
 
         // --------------------------------
-        // A. ATTACKEN ÜBERSETZEN
+        // A. ÜBERSETZUNG
         // --------------------------------
 
         if (uebersetzung) {
 
             const attacke = ziele[position];
 
-            const korrekt = normalisiere(
+            const richtig = normalisiere(
 
                 modus === "attacke-de-en"
 
@@ -1220,11 +1289,11 @@ function erstelleAttackenModus(kontext, modus) {
 
                     : attacke.de
 
-            ) === name;
+            ) === text;
 
-            if (korrekt) {
+            if (richtig) {
 
-                beendeUebersetzungsFrage(true);
+                beendeUebersetzung(true);
 
             } else if (bestaetigt) {
 
@@ -1236,7 +1305,7 @@ function erstelleAttackenModus(kontext, modus) {
 
 
         // --------------------------------
-        // B. ATTACKEN ODER POKÉMON SUCHEN
+        // B. NAMEN SUCHEN
         // --------------------------------
 
         const treffer = werLernt
@@ -1245,20 +1314,35 @@ function erstelleAttackenModus(kontext, modus) {
 
             : daten.attacken.filter(attacke =>
 
-                normalisiere(attacke.de) === name
+                normalisiere(attacke.de) === text
 
                 ||
 
-                normalisiere(attacke.en) === name
+                normalisiere(attacke.en) === text
             );
 
 
-        // WICHTIG:
-        // Die vollständigen Antwortobjekte aus "ziele"
-        // enthalten die tatsächlichen Lernlevel.
+        // --------------------------------
+        // C. PASSENDE ANTWORTEN
+        // --------------------------------
+
+        /*
+         * Wichtig:
+         *
+         * Wir suchen die erkannten IDs direkt
+         * in "ziele".
+         *
+         * Dadurch enthalten die Treffer auch das
+         * tatsächliche Lernlevel der Edition.
+         */
+
         const passende = ziele.filter(ziel =>
 
             !gefunden.has(ziel.id)
+
+            &&
+
+            !aufgedeckt.has(ziel.id)
 
             &&
 
@@ -1269,7 +1353,7 @@ function erstelleAttackenModus(kontext, modus) {
 
 
         // --------------------------------
-        // C. REIHENFOLGE ÜBERPRÜFEN
+        // D. REIHENFOLGE PRÜFEN
         // --------------------------------
 
         let erlaubte = passende;
@@ -1280,7 +1364,8 @@ function erstelleAttackenModus(kontext, modus) {
 
             erlaubte = passende.filter(antwort =>
 
-                !werLernt && methode === "level"
+                attackenRaten &&
+                methode === "level"
 
                     ? antwort.level === erwartet?.level
 
@@ -1290,24 +1375,25 @@ function erstelleAttackenModus(kontext, modus) {
 
 
         // --------------------------------
-        // D. ANTWORT NICHT PASSEND
+        // E. FALSCHE ANTWORT
         // --------------------------------
 
         if (!erlaubte.length) {
 
-            // Solange der Spieler tippt, nichts zurücksetzen.
+            // Erst bei Enter oder Prüfen reagieren.
             if (bestaetigt) {
 
                 const hinweis =
-                    !werLernt &&
+
                     reihenfolge &&
+                    attackenRaten &&
                     methode === "level" &&
                     passende.length
 
-                        ? "Die Attacke ist lernbar, aber erst " +
-                          "auf einem anderen Lernlevel."
+                        ? "Diese Attacke ist lernbar, " +
+                          "aber noch nicht an der Reihe."
 
-                        : "Antwort nicht passend, bereits gefunden " +
+                        : "Nicht passend, bereits beantwortet " +
                           "oder nicht an der Reihe.";
 
                 falscheAntwort(hinweis);
@@ -1318,7 +1404,7 @@ function erstelleAttackenModus(kontext, modus) {
 
 
         // --------------------------------
-        // E. RICHTIGE ANTWORTEN AUFDECKEN
+        // F. RICHTIGE ANTWORT
         // --------------------------------
 
         for (const antwort of erlaubte) {
@@ -1329,13 +1415,19 @@ function erstelleAttackenModus(kontext, modus) {
         eingabe.value = "";
 
         meldung.textContent =
+
             `Richtig: ${erlaubte.map(
                 antwort => antwort.de
             ).join(", ")}`;
 
         zeichneRaster();
 
-        if (gefunden.size === ziele.length) {
+
+        // --------------------------------
+        // G. RUNDENENDE PRÜFEN
+        // --------------------------------
+
+        if (fehlendeZiele().length === 0) {
 
             beendeRunde();
 
@@ -1347,16 +1439,17 @@ function erstelleAttackenModus(kontext, modus) {
 
 
     // ====================================
-    // 19. FALSCHE ANTWORT VERARBEITEN
+    // 20. FALSCHE ANTWORT VERARBEITEN
     // ====================================
 
     /**
-     * Normal: Zeigt einen Fehlerhinweis.
+     * Normal:
+     * Zeigt eine Fehlermeldung.
      *
-     * Hardcore: Setzt die aktuelle Runde zurück,
-     * ohne ein anderes Pokémon auszulosen.
+     * Hardcore:
+     * Startet dieselbe Aufgabe von vorne.
      *
-     * @param {string} hinweis - Fehlertext
+     * @param {string} hinweis - Fehlerbeschreibung
      * @returns {void}
      */
     function falscheAntwort(
@@ -1365,13 +1458,11 @@ function erstelleAttackenModus(kontext, modus) {
 
         if (schwierigkeit.value === "hardcore") {
 
-            // false = dieselbe Aufgabe behalten
             neueRunde(
 
                 false,
 
-                "Hardcore: Falsche Antwort – " +
-                "Fortschritt zurückgesetzt!"
+                "Hardcore: Falsche Antwort – von vorne!"
             );
 
         } else {
@@ -1382,11 +1473,110 @@ function erstelleAttackenModus(kontext, modus) {
 
 
     // ====================================
-    // 20. AUFGEBEN
+    // 21. EINE ATTACKE AUFDECKEN
     // ====================================
 
     /**
-     * Zeigt die fehlenden Antworten.
+     * Deckt genau eine noch fehlende Attacke auf.
+     *
+     * Freier Modus:
+     * Eine zufällige fehlende Attacke.
+     *
+     * Reihenfolge:
+     * Die nächste fehlende Attacke.
+     *
+     * Verfügbar im Zufalls- UND Übungsmodus.
+     *
+     * @returns {void}
+     */
+    function eineAttackeAufdecken() {
+
+        if (
+            !attackenRaten ||
+            !spielLaeuft ||
+            !bereit ||
+            beendet ||
+            gesperrt ||
+            pausiert
+        ) {
+
+            return;
+        }
+
+        const fehlende = fehlendeZiele();
+
+        if (!fehlende.length) {
+
+            return;
+        }
+
+        let attacke;
+
+
+        // --------------------------------
+        // A. ATTACKE AUSWÄHLEN
+        // --------------------------------
+
+        if (reihenfolge) {
+
+            // Nächste fehlende Attacke aufdecken
+            attacke = fehlende[0];
+
+        } else {
+
+            // Zufällige fehlende Attacke aufdecken
+            const zufall = Math.floor(
+                Math.random() * fehlende.length
+            );
+
+            attacke = fehlende[zufall];
+        }
+
+
+        // --------------------------------
+        // B. ALS HILFE SPEICHERN
+        // --------------------------------
+
+        // Nicht zu "gefunden" hinzufügen!
+        aufgedeckt.add(attacke.id);
+
+
+        // --------------------------------
+        // C. RASTER AKTUALISIEREN
+        // --------------------------------
+
+        zeichneRaster();
+
+
+        // --------------------------------
+        // D. WEITERSPIELEN ODER BEENDEN
+        // --------------------------------
+
+        if (fehlendeZiele().length === 0) {
+
+            beendeRunde();
+
+            meldung.textContent +=
+                ` Letzte Hilfe: ${attacke.de}.`;
+
+        } else {
+
+            meldung.textContent =
+                `Hilfe: ${attacke.de} aufgedeckt. ` +
+                "Weiter mit den übrigen Attacken!";
+
+            eingabe.focus();
+        }
+    }
+
+
+    // ====================================
+    // 22. ALLE LÖSUNGEN AUFDECKEN
+    // ====================================
+
+    /**
+     * Gibt die aktuelle Frage beziehungsweise
+     * alle noch fehlenden Antworten auf.
      *
      * @returns {void}
      */
@@ -1396,17 +1586,13 @@ function erstelleAttackenModus(kontext, modus) {
 
         if (uebersetzung) {
 
-            // Nur aktuelle Übersetzungsfrage aufgeben
-            beendeUebersetzungsFrage(false);
+            beendeUebersetzung(false);
             return;
         }
 
-        for (const ziel of ziele) {
+        for (const ziel of fehlendeZiele()) {
 
-            if (!gefunden.has(ziel.id)) {
-
-                aufgegeben.add(ziel.id);
-            }
+            aufgedeckt.add(ziel.id);
         }
 
         zeichneRaster();
@@ -1416,11 +1602,11 @@ function erstelleAttackenModus(kontext, modus) {
 
 
     // ====================================
-    // 21. ATTACKENDATEN LADEN
+    // 23. ATTACKENDATEN LADEN
     // ====================================
 
     /**
-     * Lädt Attackendaten und aktiviert die Einstellungen.
+     * Lädt Attackendaten, Editionen und Lernmethoden.
      *
      * @returns {Promise<void>}
      */
@@ -1437,19 +1623,18 @@ function erstelleAttackenModus(kontext, modus) {
                 ladeInfo.textContent =
                     "Lernsets und Maschinen werden geladen …";
 
-                [lernsets, maschinen] =
-                    await Promise.all([
+                [lernsets, maschinen] = await Promise.all([
 
-                        ladeLernsets(),
+                    ladeLernsets(),
 
-                        ladeMaschinen()
-                    ]);
+                    ladeMaschinen()
+                ]);
 
                 if (entsorgt) return;
 
 
                 // --------------------------------
-                // EDITIONEN AUFBAUEN
+                // A. EDITIONEN
                 // --------------------------------
 
                 const gruppen = daten.gruppen
@@ -1496,7 +1681,7 @@ function erstelleAttackenModus(kontext, modus) {
 
 
                 // --------------------------------
-                // LERNMETHODEN AUFBAUEN
+                // B. LERNMETHODEN
                 // --------------------------------
 
                 for (const filter of ATTACKEN_METHODEN) {
@@ -1511,7 +1696,7 @@ function erstelleAttackenModus(kontext, modus) {
                 }
 
                 methode =
-                    reihenfolge && !werLernt
+                    reihenfolge && attackenRaten
 
                         ? "level"
 
@@ -1522,21 +1707,19 @@ function erstelleAttackenModus(kontext, modus) {
 
 
             // --------------------------------
-            // ÜBUNGSAUSWAHL VORBEREITEN
+            // C. ÜBUNGSAUSWAHL
             // --------------------------------
 
-            uebungBeschriftung.textContent =
-                zielIstAttacke
+            uebungLabel.textContent = zielIstAttacke
 
-                    ? "Welche Attacke möchtest du üben?"
+                ? "Welche Attacke möchtest du üben?"
 
-                    : "Welches Pokémon möchtest du üben?";
+                : "Welches Pokémon möchtest du üben?";
 
-            spielBereit = true;
+            bereit = true;
 
             ladeInfo.hidden = true;
 
-            // Zuerst Normal/Hardcore/Übung auswählen
             einstellungen.hidden = false;
 
         } catch (fehler) {
@@ -1544,8 +1727,8 @@ function erstelleAttackenModus(kontext, modus) {
             if (entsorgt) return;
 
             ladeInfo.textContent =
-                "Attackendaten konnten nicht geladen werden: " +
-                fehler.message;
+                "Attackendaten konnten nicht geladen " +
+                "werden: " + fehler.message;
 
             console.error(fehler);
         }
@@ -1553,10 +1736,10 @@ function erstelleAttackenModus(kontext, modus) {
 
 
     // ====================================
-    // 22. EVENT-LISTENER
+    // 24. EVENT-LISTENER
     // ====================================
 
-    // Übungsmodus an- oder ausschalten
+    // Übungsmodus aktivieren/deaktivieren
     uebungAktiv.addEventListener("change", () => {
 
         uebungAuswahl.hidden =
@@ -1564,21 +1747,23 @@ function erstelleAttackenModus(kontext, modus) {
 
         einstellungsMeldung.textContent = "";
 
-        // Vorschläge erst erstellen, wenn sie benötigt werden
         if (
             uebungAktiv.checked &&
-            !uebungListe.childElementCount
+            !uebungListe.childElementCount &&
+            bereit
         ) {
 
-            baueUebungsListe();
+            baueUebungsliste();
         }
     });
 
 
     // Spiel starten
     root.querySelector(".spiel-start").addEventListener(
+
         "click",
-        spieleMitEinstellungen
+
+        starteMitEinstellungen
     );
 
 
@@ -1586,12 +1771,14 @@ function erstelleAttackenModus(kontext, modus) {
     root.querySelector(
         ".einstellungen-oeffnen"
     ).addEventListener(
+
         "click",
+
         oeffneEinstellungen
     );
 
 
-    // Richtige Antworten beim Tippen erkennen
+    // Antwort beim Tippen prüfen
     eingabe.addEventListener("input", () => {
 
         pruefeAntwort(false);
@@ -1599,7 +1786,7 @@ function erstelleAttackenModus(kontext, modus) {
 
 
     // Enter oder Prüfen-Button
-    antwortFormular.addEventListener("submit", event => {
+    formular.addEventListener("submit", event => {
 
         event.preventDefault();
 
@@ -1607,9 +1794,23 @@ function erstelleAttackenModus(kontext, modus) {
     });
 
 
+    // NEU: Eine Attacke aufdecken
+    if (hinweisButton) {
+
+        hinweisButton.addEventListener(
+
+            "click",
+
+            eineAttackeAufdecken
+        );
+    }
+
+
     // Aufgeben
     aufgebenButton.addEventListener(
+
         "click",
+
         aufloesen
     );
 
@@ -1621,7 +1822,7 @@ function erstelleAttackenModus(kontext, modus) {
     });
 
 
-    // Neue Aufgabe / dieselbe Übung wiederholen
+    // Neue Aufgabe / Übung wiederholen
     naechstesButton.addEventListener("click", () => {
 
         neueRunde(true);
@@ -1647,14 +1848,14 @@ function erstelleAttackenModus(kontext, modus) {
 
 
     // ====================================
-    // 23. INITIALISIEREN
+    // 25. SPIEL INITIALISIEREN
     // ====================================
 
     initialisieren();
 
 
     // ====================================
-    // 24. SPIELSTEUERUNG ZURÜCKGEBEN
+    // 26. SPIELSTEUERUNG ZURÜCKGEBEN
     // ====================================
 
     return {
@@ -1667,35 +1868,29 @@ function erstelleAttackenModus(kontext, modus) {
 
             timer.pause();
 
-            if (weiterTimer !== null) {
+            clearTimeout(weiterTimer);
 
-                clearTimeout(weiterTimer);
-
-                weiterTimer = null;
-            }
+            weiterTimer = null;
         },
 
         resume() {
 
             pausiert = false;
 
-            if (wartetAufNaechsteFrage) {
+            if (
+                wartet &&
+                spielLaeuft &&
+                !beendet
+            ) {
 
                 zeigeFrage();
             }
 
-            // Während der Einstellungen keine Zeit zählen
             if (
                 spielLaeuft &&
                 !beendet &&
-                !einstellungen.hidden
-            ) {
-
-                timer.pause();
-
-            } else if (
-                spielLaeuft &&
-                !beendet
+                einstellungen.hidden &&
+                !wartet
             ) {
 
                 timer.resume();
