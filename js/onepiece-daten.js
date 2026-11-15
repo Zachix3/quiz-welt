@@ -1,456 +1,881 @@
 
-/* =========================================
-   ONE PIECE – VOLLSTÄNDIGERER DATENKATALOG
-   ========================================= */
+/* ==========================================================
+   ONE PIECE – LOKALER WIKI-DATENSATZ
 
-// =========================================
-// 1. API UND CACHE
-// =========================================
+   Quellen je Frucht:
+   https://onepiece.fandom.com/wiki/<wiki>
 
-const OP_API = "https://onepieceapi.com/api";
+   "Fruit Debut" = erste Darstellung der Frucht selbst.
+   "Usage Debut" = erste gezeigte Verwendung der Fähigkeit.
+   Das ist NICHT automatisch die erste Namens-Erwähnung!
 
-const OP_CACHE_KEY = "quiz-onepiece-katalog-v2";
+   null = keine belegte Anime-Episode im Wiki-Infokasten.
 
-const OP_CACHE_MS = 24 * 60 * 60 * 1000;
+   Enthält bewusst keine API-Anfrage. Ergänzungen erfolgen
+   hier im Quelltext und werden über GitHub veröffentlicht.
+   ========================================================== */
+
+/* Hilfsfunktion für die kompakte manuelle Datenpflege.
+   f(wiki, deutsch, englisch, nutzungsfolge, fruchtfolge,
+     anwendender, typ, weitere Namen)
+*/
+function opFrucht(
+    wiki,
+    de,
+    en,
+    anwendung,
+    fruchtDebuet,
+    nutzer,
+    typ = "Paramecia",
+    alias = []
+) {
+    // Wiki-URL und japanische Bezeichnung aus Artikeltitel.
+    const seitenname = wiki.replaceAll("_", " ");
+    const ja = seitenname.replace(
+        /, Model: /,
+        ", Moderu "
+    );
+
+    const id = wiki.toLowerCase().replace(
+        /[^a-z0-9]+/g,
+        "-"
+    );
+
+    const nutzerListe = Array.isArray(nutzer)
+        ? nutzer
+        : [nutzer];
+
+    return {
+        id,
+        de,
+        en,
+        ja,
+        alias,
+        typ,
+        anwendung,
+        fruchtDebuet,
+
+        // Kompatibilität mit dem bisherigen app.js:
+        // Das neue Menü nennt diese Option "Fruit Debut".
+        erwaehnung: fruchtDebuet,
+
+        nutzerDaten: nutzerListe
+            .filter(Boolean)
+            .map(n => ({
+                name: n,
+                ab: anwendung
+            })),
+
+        anwender: [],
+
+        quelle:
+            "https://onepiece.fandom.com/wiki/" + wiki,
+
+        bild: null
+    };
+}
 
 
-// =========================================
-// 2. GEPRÜFTE EPISODENDATEN
-// =========================================
+// Wiki-Infokästen wurden einzeln geprüft.
+// null beim Fruit Debut ist häufig: das Wiki nennt dort
+// ein Magazin anstelle einer Anime-Episode.
 
-/*
- * erwaehnung = erste bekannte namentliche Erwähnung
- * anwendung  = erste bekannte Nutzung der Kraft
- *
- * null bedeutet: noch nicht verifiziert.
- */
+const OP_FRUECHTE = [
 
-const OP_GEPRUEFTE_FRUECHTE = [
-    {
-        id: "gomu",
-        ja: "Gomu Gomu no Mi",
-        de: "Gum-Gum-Frucht",
-        en: "Gum-Gum Fruit",
-        alias: ["Gumm-Gumm-Frucht"],
-        erwaehnung: 1,
-        anwendung: 1,
-        anwender: ["luffy"]
-    },
-    {
-        id: "bara",
-        ja: "Bara Bara no Mi",
-        de: "Trenn-Trenn-Frucht",
-        en: "Chop-Chop Fruit",
-        alias: [],
-        erwaehnung: 5,
-        anwendung: 5,
-        anwender: ["buggy"]
-    },
-    {
-        id: "sube",
-        ja: "Sube Sube no Mi",
-        de: "Alabaster-Frucht",
-        en: "Slip-Slip Fruit",
-        alias: ["Glätte-Frucht"],
-        erwaehnung: 52,
-        anwendung: 46,
-        anwender: ["alvida"]
-    },
-    {
-        id: "hana",
-        ja: "Hana Hana no Mi",
-        de: "Flora-Frucht",
-        en: "Flower-Flower Fruit",
-        alias: [],
-        erwaehnung: 67,
-        anwendung: 67,
-        anwender: ["robin"]
-    },
-    {
-        id: "mera",
-        ja: "Mera Mera no Mi",
-        de: "Feuer-Frucht",
-        en: "Flame-Flame Fruit",
-        alias: [],
-        erwaehnung: 96,
-        anwendung: 94,
-        anwender: ["ace"]
-    }
+    // =====================================
+    // EAST BLUE / FRÜHE GRAND LINE
+    // =====================================
+
+    opFrucht(
+        "Gomu_Gomu_no_Mi",
+        "Gum-Gum-Frucht",
+        "Gum-Gum Fruit",
+        1, 4,
+        "Monkey D. Ruffy"
+    ),
+
+    opFrucht(
+        "Bara_Bara_no_Mi",
+        "Trenn-Trenn-Frucht",
+        "Chop-Chop Fruit",
+        5, 8,
+        "Buggy"
+    ),
+
+    opFrucht(
+        "Sube_Sube_no_Mi",
+        "Alabaster-Frucht",
+        "Slip-Slip Fruit",
+        46, null,
+        "Alvida"
+    ),
+
+    opFrucht(
+        "Moku_Moku_no_Mi",
+        "Rauch-Frucht",
+        "Smoke-Smoke Fruit",
+        48, null,
+        "Smoker",
+        "Logia"
+    ),
+
+    opFrucht(
+        "Bomu_Bomu_no_Mi",
+        "Bomb-Bomb-Frucht",
+        "Bomb-Bomb Fruit",
+        65, null,
+        "Mr. 5"
+    ),
+
+    opFrucht(
+        "Kiro_Kiro_no_Mi",
+        "Kilo-Kilo-Frucht",
+        "Kilo-Kilo Fruit",
+        66, null,
+        "Miss Valentine"
+    ),
+
+    opFrucht(
+        "Hana_Hana_no_Mi",
+        "Flora-Frucht",
+        "Flower-Flower Fruit",
+        67, null,
+        "Nico Robin"
+    ),
+
+    opFrucht(
+        "Doru_Doru_no_Mi",
+        "Wachs-Frucht",
+        "Wax-Wax Fruit",
+        71, null,
+        "Mr. 3"
+    ),
+
+    opFrucht(
+        "Suna_Suna_no_Mi",
+        "Sand-Frucht",
+        "Sand-Sand Fruit",
+        77, null,
+        "Crocodile",
+        "Logia"
+    ),
+
+    opFrucht(
+        "Baku_Baku_no_Mi",
+        "Munch-Frucht",
+        "Munch-Munch Fruit",
+        79, null,
+        "Wapol"
+    ),
+
+    opFrucht(
+        "Ushi_Ushi_no_Mi,_Model:_Bison",
+        "Ochsen-Frucht, Modell Bison",
+        "Ox-Ox Fruit, Model: Bison",
+        81, 1101,
+        "Dalton",
+        "Zoan"
+    ),
+
+    opFrucht(
+        "Hito_Hito_no_Mi",
+        "Mensch-Mensch-Frucht",
+        "Human-Human Fruit",
+        83, null,
+        "Tony Tony Chopper",
+        "Zoan"
+    ),
+
+    opFrucht(
+        "Mane_Mane_no_Mi",
+        "Nachahmungs-Frucht",
+        "Clone-Clone Fruit",
+        92, null,
+        "Bon Curry"
+    ),
+
+    opFrucht(
+        "Mera_Mera_no_Mi",
+        "Feuer-Frucht",
+        "Flame-Flame Fruit",
+        94, 629,
+        "Portgas D. Ace",
+        "Logia"
+    ),
+
+    opFrucht(
+        "Supa_Supa_no_Mi",
+        "Schnitt-Frucht",
+        "Dice-Dice Fruit",
+        103, null,
+        "Mr. 1"
+    ),
+
+    opFrucht(
+        "Tori_Tori_no_Mi,_Model:_Falcon",
+        "Vogel-Frucht, Modell Falke",
+        "Bird-Bird Fruit, Model: Falcon",
+        106, null,
+        "Pell",
+        "Zoan"
+    ),
+
+    opFrucht(
+        "Mogu_Mogu_no_Mi",
+        "Maulwurf-Frucht",
+        "Mole-Mole Fruit",
+        113, null,
+        "Miss Merry Christmas",
+        "Zoan"
+    ),
+
+    opFrucht(
+        "Toge_Toge_no_Mi",
+        "Stachel-Frucht",
+        "Spike-Spike Fruit",
+        117, null,
+        "Miss Doublefinger"
+    ),
+
+    opFrucht(
+        "Inu_Inu_no_Mi,_Model:_Jackal",
+        "Hund-Frucht, Modell Schakal",
+        "Dog-Dog Fruit, Model: Jackal",
+        120, null,
+        "Chaka",
+        "Zoan"
+    ),
+
+    opFrucht(
+        "Ori_Ori_no_Mi",
+        "Fessel-Frucht",
+        "Bind-Bind Fruit",
+        130, null,
+        "Hina"
+    ),
+
+
+    // =====================================
+    // JAYA / SKYPIA / WATER 7
+    // =====================================
+
+    opFrucht(
+        "Bane_Bane_no_Mi",
+        "Spiral-Frucht",
+        "Spring-Spring Fruit",
+        150, null,
+        "Bellamy"
+    ),
+
+    opFrucht(
+        "Ito_Ito_no_Mi",
+        "Faden-Frucht",
+        "String-String Fruit",
+        151, 723,
+        "Donquixote Doflamingo"
+    ),
+
+    opFrucht(
+        "Uma_Uma_no_Mi",
+        "Pferde-Frucht",
+        "Horse-Horse Fruit",
+        153, null,
+        "Pierre",
+        "Zoan"
+    ),
+
+    opFrucht(
+        "Goro_Goro_no_Mi",
+        "Donner-Frucht",
+        "Rumble-Rumble Fruit",
+        155, null,
+        "Enel",
+        "Logia"
+    ),
+
+    opFrucht(
+        "Noro_Noro_no_Mi",
+        "Lahm-Frucht",
+        "Slow-Slow Fruit",
+        210, null,
+        "Foxy"
+    ),
+
+    opFrucht(
+        "Hie_Hie_no_Mi",
+        "Gefrier-Frucht",
+        "Ice-Ice Fruit",
+        225, null,
+        "Kuzan",
+        "Logia"
+    ),
+
+    opFrucht(
+        "Doa_Doa_no_Mi",
+        "Tür-Frucht",
+        "Door-Door Fruit",
+        231, null,
+        "Blueno"
+    ),
+
+    opFrucht(
+        "Neko_Neko_no_Mi,_Model:_Leopard",
+        "Katzen-Frucht, Modell Leopard",
+        "Cat-Cat Fruit, Model: Leopard",
+        245, 1101,
+        "Rob Lucci",
+        "Zoan"
+    ),
+
+    opFrucht(
+        "Inu_Inu_no_Mi,_Model:_Wolf",
+        "Hund-Frucht, Modell Wolf",
+        "Dog-Dog Fruit, Model: Wolf",
+        266, null,
+        "Jabra",
+        "Zoan"
+    ),
+
+    opFrucht(
+        "Zou_Zou_no_Mi",
+        "Elefanten-Frucht",
+        "Elephant-Elephant Fruit",
+        285, null,
+        "Funkfreed",
+        "Zoan"
+    ),
+
+    opFrucht(
+        "Ushi_Ushi_no_Mi,_Model:_Giraffe",
+        "Ochsen-Frucht, Modell Giraffe",
+        "Ox-Ox Fruit, Model: Giraffe",
+        286, 266,
+        "Kaku",
+        "Zoan"
+    ),
+
+    opFrucht(
+        "Awa_Awa_no_Mi",
+        "Schaum-Frucht",
+        "Bubble-Bubble Fruit",
+        293, 266,
+        "Kalifa"
+    ),
+
+    opFrucht(
+        "Beri_Beri_no_Mi",
+        "Beeren-Frucht",
+        "Berry-Berry Fruit",
+        309, null,
+        "Very Good"
+    ),
+
+    opFrucht(
+        "Sabi_Sabi_no_Mi",
+        "Rost-Frucht",
+        "Rust-Rust Fruit",
+        309, null,
+        "Shu"
+    ),
+
+
+    // =====================================
+    // THRILLER BARK / SABAODY /
+    // IMPEL DOWN / MARINEFORD
+    // =====================================
+
+    opFrucht(
+        "Horo_Horo_no_Mi",
+        "Geister-Frucht",
+        "Hollow-Hollow Fruit",
+        337, null,
+        "Perona"
+    ),
+
+    opFrucht(
+        "Yomi_Yomi_no_Mi",
+        "Totenreich-Frucht",
+        "Revive-Revive Fruit",
+        337, null,
+        "Brook"
+    ),
+
+    opFrucht(
+        "Kage_Kage_no_Mi",
+        "Schatten-Frucht",
+        "Shadow-Shadow Fruit",
+        338, null,
+        "Gecko Moria"
+    ),
+
+    opFrucht(
+        "Suke_Suke_no_Mi",
+        "Unsichtbarkeits-Frucht",
+        "Clear-Clear Fruit",
+        339, null,
+        "Absalom"
+    ),
+
+    opFrucht(
+        "Nikyu_Nikyu_no_Mi",
+        "Tatzen-Frucht",
+        "Paw-Paw Fruit",
+        368, 1130,
+        "Bartholomew Kuma"
+    ),
+
+    opFrucht(
+        "Toshi_Toshi_no_Mi",
+        "Alters-Frucht",
+        "Age-Age Fruit",
+        393, null,
+        "Jewelry Bonney"
+    ),
+
+    opFrucht(
+        "Ope_Ope_no_Mi",
+        "Operations-Frucht",
+        "Op-Op Fruit",
+        398, 704,
+        "Trafalgar D. Water Law"
+    ),
+
+    opFrucht(
+        "Jiki_Jiki_no_Mi",
+        "Magnet-Frucht",
+        "Magnet-Magnet Fruit",
+        398, 1103,
+        "Eustass Kid"
+    ),
+
+    opFrucht(
+        "Pika_Pika_no_Mi",
+        "Funkel-Frucht",
+        "Glint-Glint Fruit",
+        400, null,
+        "Borsalino",
+        "Logia"
+    ),
+
+    opFrucht(
+        "Shiro_Shiro_no_Mi",
+        "Festungs-Frucht",
+        "Castle-Castle Fruit",
+        401, null,
+        "Capone Bege"
+    ),
+
+    opFrucht(
+        "Wara_Wara_no_Mi",
+        "Stroh-Frucht",
+        "Straw-Straw Fruit",
+        401, null,
+        "Basil Hawkins"
+    ),
+
+    opFrucht(
+        "Oto_Oto_no_Mi",
+        "Ton-Frucht",
+        "Tone-Tone Fruit",
+        402, null,
+        "Scratchmen Apoo"
+    ),
+
+    opFrucht(
+        "Mero_Mero_no_Mi",
+        "Liebes-Frucht",
+        "Love-Love Fruit",
+        410, 1101,
+        "Boa Hancock"
+    ),
+
+    opFrucht(
+        "Hebi_Hebi_no_Mi,_Model:_Anaconda",
+        "Schlangen-Frucht, Modell Anakonda",
+        "Snake-Snake Fruit, Model: Anaconda",
+        412, null,
+        "Boa Sandersonia",
+        "Zoan"
+    ),
+
+    opFrucht(
+        "Hebi_Hebi_no_Mi,_Model:_King_Cobra",
+        "Schlangen-Frucht, Modell Königskobra",
+        "Snake-Snake Fruit, Model: King Cobra",
+        412, null,
+        "Boa Marigold",
+        "Zoan"
+    ),
+
+    opFrucht(
+        "Doku_Doku_no_Mi",
+        "Gift-Frucht",
+        "Venom-Venom Fruit",
+        425, null,
+        "Magellan"
+    ),
+
+    opFrucht(
+        "Horu_Horu_no_Mi",
+        "Hormon-Frucht",
+        "Horm-Horm Fruit",
+        439, null,
+        "Emporio Ivankov"
+    ),
+
+    opFrucht(
+        "Choki_Choki_no_Mi",
+        "Scheren-Frucht",
+        "Snip-Snip Fruit",
+        442, null,
+        "Inazuma"
+    ),
+
+    opFrucht(
+        "Poke_Poke_no_Mi",
+        "Taschen-Frucht",
+        "Pocket-Pocket Fruit",
+        461, null,
+        "Blamenco"
+    ),
+
+    opFrucht(
+        "Gura_Gura_no_Mi",
+        "Erdbeben-Frucht",
+        "Tremor-Tremor Fruit",
+        461, null,
+        "Edward Newgate"
+    ),
+
+    opFrucht(
+        "Magu_Magu_no_Mi",
+        "Magma-Frucht",
+        "Mag-Mag Fruit",
+        463, null,
+        "Sakazuki",
+        "Logia"
+    ),
+
+    opFrucht(
+        "Kira_Kira_no_Mi",
+        "Glitzer-Frucht",
+        "Twinkle-Twinkle Fruit",
+        463, null,
+        "Jozu"
+    ),
+
+    opFrucht(
+        "Tori_Tori_no_Mi,_Model:_Phoenix",
+        "Vogel-Frucht, Modell Phönix",
+        "Bird-Bird Fruit, Model: Phoenix",
+        463, null,
+        "Marco",
+        "Mythische Zoan"
+    ),
+
+    opFrucht(
+        "Woshu_Woshu_no_Mi",
+        "Wäsche-Frucht",
+        "Wash-Wash Fruit",
+        465, null,
+        "Tsuru"
+    ),
+
+    opFrucht(
+        "Hito_Hito_no_Mi,_Model:_Daibutsu",
+        "Mensch-Frucht, Modell Buddha",
+        "Human-Human Fruit, Model: Buddha",
+        480, null,
+        "Sengoku",
+        "Mythische Zoan"
+    ),
+
+    opFrucht(
+        "Yami_Yami_no_Mi",
+        "Finster-Frucht",
+        "Dark-Dark Fruit",
+        325, 325,
+        "Marshall D. Teach",
+        "Logia"
+    ),
+
+
+    // =====================================
+    // NACH DEM ZEITSPRUNG /
+    // FISCHMENSCHENINSEL / PUNK HAZARD
+    // =====================================
+
+    opFrucht(
+        "Numa_Numa_no_Mi",
+        "Sumpf-Frucht",
+        "Swamp-Swamp Fruit",
+        521, null,
+        "Caribou",
+        "Logia"
+    ),
+
+    opFrucht(
+        "Mato_Mato_no_Mi",
+        "Ziel-Frucht",
+        "Mark-Mark Fruit",
+        532, null,
+        "Vander Decken IX"
+    ),
+
+    opFrucht(
+        "Kame_Kame_no_Mi",
+        "Schildkröten-Frucht",
+        "Turtle-Turtle Fruit",
+        572, null,
+        "Pekoms",
+        "Zoan"
+    ),
+
+    opFrucht(
+        "Gasu_Gasu_no_Mi",
+        "Gas-Frucht",
+        "Gas-Gas Fruit",
+        581, null,
+        "Caesar Clown",
+        "Logia"
+    ),
+
+    opFrucht(
+        "Fuku_Fuku_no_Mi",
+        "Kleider-Frucht",
+        "Garb-Garb Fruit",
+        588, null,
+        "Kinemon"
+    ),
+
+    opFrucht(
+        "Yuki_Yuki_no_Mi",
+        "Schnee-Frucht",
+        "Snow-Snow Fruit",
+        607, null,
+        "Monet",
+        "Logia"
+    ),
+
+    opFrucht(
+        "Buki_Buki_no_Mi",
+        "Waffen-Frucht",
+        "Arms-Arms Fruit",
+        608, null,
+        "Baby 5"
+    ),
+
+    opFrucht(
+        "Guru_Guru_no_Mi",
+        "Rotier-Frucht",
+        "Spin-Spin Fruit",
+        618, null,
+        "Buffalo"
+    ),
+
+    opFrucht(
+        "Beta_Beta_no_Mi",
+        "Klebe-Frucht",
+        "Stick-Stick Fruit",
+        629, null,
+        "Trebol"
+    ),
+
+    opFrucht(
+        "Hobi_Hobi_no_Mi",
+        "Hobby-Frucht",
+        "Hobby-Hobby Fruit",
+        630, null,
+        "Sugar"
+    ),
+
+    opFrucht(
+        "Bari_Bari_no_Mi",
+        "Barriere-Frucht",
+        "Barrier-Barrier Fruit",
+        637, null,
+        "Bartolomeo"
+    ),
+
+    opFrucht(
+        "Giro_Giro_no_Mi",
+        "Blick-Frucht",
+        "Glare-Glare Fruit",
+        640, null,
+        "Viola"
+    ),
+
+    opFrucht(
+        "Nui_Nui_no_Mi",
+        "Näh-Frucht",
+        "Sew-Sew Fruit",
+        641, null,
+        "Leo"
+    ),
+
+    opFrucht(
+        "Mushi_Mushi_no_Mi,_Model:_Kabutomushi",
+        "Insekten-Frucht, Modell Nashornkäfer",
+        "Bug-Bug Fruit, Model: Rhinoceros Beetle",
+        648, null,
+        "Kabu",
+        "Zoan"
+    ),
+
+
+    // =====================================
+    // AB EPISODE 651
+    // =====================================
+
+    opFrucht(
+        "Pamu_Pamu_no_Mi",
+        "Platz-Frucht",
+        "Pop-Pop Fruit",
+        653, null,
+        "Gladius"
+    ),
+
+    opFrucht(
+        "Sui_Sui_no_Mi",
+        "Schwimm-Frucht",
+        "Swim-Swim Fruit",
+        664, null,
+        "Senor Pink"
+    ),
+
+    opFrucht(
+        "Ton_Ton_no_Mi",
+        "Tonnen-Frucht",
+        "Ton-Ton Fruit",
+        667, null,
+        "Machvise"
+    ),
+
+    opFrucht(
+        "Ishi_Ishi_no_Mi",
+        "Stein-Frucht",
+        "Stone-Stone Fruit",
+        669, null,
+        "Pica"
+    ),
+
+    opFrucht(
+        "Nagi_Nagi_no_Mi",
+        "Stille-Frucht",
+        "Calm-Calm Fruit",
+        703, null,
+        "Donquixote Rosinante"
+    ),
+
+    opFrucht(
+        "Buku_Buku_no_Mi",
+        "Bücher-Frucht",
+        "Book-Book Fruit",
+        810, null,
+        "Charlotte Mont-d'Or"
+    ),
+
+    opFrucht(
+        "Kuku_Kuku_no_Mi",
+        "Koch-Frucht",
+        "Cook-Cook Fruit",
+        832, null,
+        "Streusen"
+    ),
+
+    opFrucht(
+        "Kobu_Kobu_no_Mi",
+        "Ansporn-Frucht",
+        "Pump-Pump Fruit",
+        880, null,
+        "Belo Betty"
+    ),
+
+    opFrucht(
+        "Zou_Zou_no_Mi,_Model:_Mammoth",
+        "Elefanten-Frucht, Modell Mammut",
+        "Eleph-Eleph Fruit, Model: Mammoth",
+        757, null,
+        "Jack",
+        "Antike Zoan"
+    )
 ];
 
 
 // =========================================
-// 3. FIGUREN MIT BEKANNTEM ANIME-DEBÜT
+// CHARAKTERE
 // =========================================
 
-/*
- * Wir übernehmen bei diesen Figuren nur Daten,
- * die zum jeweiligen frühen Serienstand passen.
- *
- * Die API kann bereits spätere Kopfgelder,
- * Altersangaben oder Outfits enthalten.
- */
+// Bereits bekannte Figuren behalten.
+// Für weitere Fruchtanwender wird eine konservative
+// Freigabegrenze aus der ersten Nutzung verwendet.
 
-const OP_GEPRUEFTE_FIGUREN = [
-    {
-        id: "luffy",
-        name: "Monkey D. Ruffy",
-        en: "Monkey D. Luffy",
-        alias: ["Ruffy", "Luffy", "Strohhut Ruffy"],
-        episode: 1,
-        arc: "Romance Dawn",
-        alter: 17,
-        groesse: 172
-    },
-    {
-        id: "zoro",
-        name: "Lorenor Zorro",
-        en: "Roronoa Zoro",
-        alias: ["Zorro", "Zoro"],
-        episode: 1,
-        arc: "Romance Dawn"
-    },
-    {
-        id: "nami",
-        name: "Nami",
-        en: "Nami",
-        alias: [],
-        episode: 1,
-        arc: "Romance Dawn"
-    },
-    {
-        id: "koby",
-        name: "Corby",
-        en: "Koby",
-        alias: ["Coby"],
-        episode: 1,
-        arc: "Romance Dawn"
-    },
-    {
-        id: "alvida",
-        name: "Alvida",
-        en: "Alvida",
-        alias: ["Lady Alvida"],
-        episode: 1,
-        arc: "Romance Dawn"
-    },
-    {
-        id: "buggy",
-        name: "Buggy",
-        en: "Buggy",
-        alias: ["Buggy der Clown", "Buggy the Clown"],
-        episode: 4,
-        arc: "Orange Town",
-        alter: 37,
-        groesse: 192
-    },
-    {
-        id: "usopp",
-        name: "Lysop",
-        en: "Usopp",
-        alias: ["Usopp"],
-        episode: 8,
-        arc: "Syrup Village"
-    },
-    {
-        id: "sanji",
-        name: "Sanji",
-        en: "Sanji",
-        alias: ["Schwarzfuß Sanji"],
-        episode: 20,
-        arc: "Baratié"
-    },
-    {
-        id: "robin",
-        name: "Nico Robin",
-        en: "Nico Robin",
-        alias: ["Robin", "Miss All Sunday"],
-        episode: 67,
-        arc: "Whisky Peak",
-        alter: 28,
-        groesse: 188
-    },
-    {
-        id: "chopper",
-        name: "Tony Chopper",
-        en: "Tony Tony Chopper",
-        alias: ["Chopper"],
-        episode: 81,
-        arc: "Drum Island"
-    },
-    {
-        id: "ace",
-        name: "Portgas D. Ace",
-        en: "Portgas D. Ace",
-        alias: ["Ace", "Feuerfaust Ace"],
-        episode: 91,
-        arc: "Drum Island",
-        alter: 20,
-        groesse: 185
-    }
+const OP_FIGUREN_GRUNDLAGE = [
+    ["luffy", "Monkey D. Ruffy", "Monkey D. Luffy", 1,
+        ["Ruffy", "Luffy"]],
+
+    ["zoro", "Lorenor Zorro", "Roronoa Zoro", 1,
+        ["Zorro", "Zoro"]],
+
+    ["nami", "Nami", "Nami", 1, []],
+
+    ["koby", "Corby", "Koby", 1,
+        ["Coby"]],
+
+    ["alvida", "Alvida", "Alvida", 1, []],
+
+    ["buggy", "Buggy", "Buggy", 4,
+        ["Buggy der Clown"]],
+
+    ["usopp", "Lysop", "Usopp", 8,
+        ["Usopp"]],
+
+    ["sanji", "Sanji", "Sanji", 20, []],
+
+    ["robin", "Nico Robin", "Nico Robin", 67,
+        ["Robin", "Miss All Sunday"]],
+
+    ["chopper", "Tony Tony Chopper",
+        "Tony Tony Chopper", 81, ["Chopper"]],
+
+    ["ace", "Portgas D. Ace",
+        "Portgas D. Ace", 91,
+        ["Ace", "Feuerfaust Ace"]]
 ];
 
 
-// =========================================
-// 4. DEUTSCHE TEUFELSFRUCHT-NAMEN
-// =========================================
+// Bekannte Alternativnamen für Suchvorschläge
 
-/*
- * Deutsche Bezeichnungen aus deutschsprachigen
- * One-Piece-Übersichten.
- *
- * Nicht zugeordnete Früchte bekommen de = null.
- * Das Spiel erfindet keine Übersetzung.
- */
-
-const OP_DEUTSCHE_FRUCHTNAMEN = {
-    "Bomu Bomu no Mi": "Bomb-Bomb-Frucht",
-    "Kilo Kilo no Mi": "Kilo-Kilo-Frucht",
-    "Doru Doru no Mi": "Wachs-Frucht",
-    "Baku Baku no Mi": "Munch-Frucht",
-    "Mane Mane no Mi": "Nachahmungs-Frucht",
-    "Supa Supa no Mi": "Schnitt-Frucht",
-    "Toge Toge no Mi": "Stachel-Frucht",
-    "Ori Ori no Mi": "Fessel-Frucht",
-    "Bane Bane no Mi": "Spiral-Frucht",
-    "Ito Ito no Mi": "Faden-Frucht",
-    "Noro Noro no Mi": "Lahm-Frucht",
-    "Doa Doa no Mi": "Door-Door-Frucht",
-    "Awa Awa no Mi": "Schaum-Frucht",
-    "Sabi Sabi no Mi": "Rost-Frucht",
-    "Horo Horo no Mi": "Geister-Frucht",
-    "Yomi Yomi no Mi": "Totenreich-Frucht",
-    "Kage Kage no Mi": "Schatten-Frucht",
-    "Suke Suke no Mi": "Unsichtbarkeits-Frucht",
-    "Nikyu Nikyu no Mi": "Tatzen-Frucht",
-    "Toshi Toshi no Mi": "Alters-Frucht",
-    "Jiki Jiki no Mi": "Magnet-Frucht",
-    "Ope Ope no Mi": "Operations-Frucht",
-    "Shiro Shiro no Mi": "Festungs-Frucht",
-    "Wara Wara no Mi": "Stroh-Frucht",
-    "Oto Oto no Mi": "Ton-Frucht",
-    "Mero Mero no Mi": "Liebes-Frucht",
-    "Doku Doku no Mi": "Gift-Frucht",
-    "Horu Horu no Mi": "Hormon-Frucht",
-    "Choki Choki no Mi": "Scheren-Frucht",
-    "Gura Gura no Mi": "Erdbeben-Frucht",
-    "Kira Kira no Mi": "Glitzer-Frucht",
-    "Poke Poke no Mi": "Taschen-Frucht",
-    "Woshu Woshu no Mi": "Wäsche-Frucht",
-    "Mato Mato no Mi": "Ziel-Frucht",
-    "Fuku Fuku no Mi": "Kleider-Frucht",
-    "Hobi Hobi no Mi": "Hobby-Frucht",
-    "Buki Buki no Mi": "Waffen-Frucht",
-    "Guru Guru no Mi": "Rotier-Frucht",
-    "Beta Beta no Mi": "Klebe-Frucht",
-    "Zushi Zushi no Mi": "Stampf-Frucht",
-    "Bari Bari no Mi": "Barriere-Frucht",
-    "Nui Nui no Mi": "Näh-Frucht",
-    "Giro Giro no Mi": "Blick-Frucht",
-    "Ato Ato no Mi": "Kunst-Frucht",
-    "Jake Jake no Mi": "Jacken-Frucht",
-    "Pamu Pamu no Mi": "Platz-Frucht",
-    "Sui Sui no Mi": "Schwimm-Frucht",
-    "Ton Ton no Mi": "Tonnen-Frucht",
-    "Hira Hira no Mi": "Flaggen-Frucht",
-    "Ishi Ishi no Mi": "Stein-Frucht",
-    "Fude Fude no Mi": "Pinsel-Frucht",
-    "Nagi Nagi no Mi": "Stille-Frucht",
-    "Chiyu Chiyu no Mi": "Heilungs-Frucht",
-    "Soru Soru no Mi": "Seelen-Frucht",
-    "Mira Mira no Mi": "Spiegel-Frucht",
-    "Pero Pero no Mi": "Schleck-Frucht",
-    "Bisu Bisu no Mi": "Keks-Frucht",
-    "Buku Buku no Mi": "Bücher-Frucht",
-    "Shibo Shibo no Mi": "Wring-Frucht",
-    "Memo Memo no Mi": "Gedächtnis-Frucht",
-    "Mochi Mochi no Mi": "Mochi-Frucht",
-    "Hoya Hoya no Mi": "Lampen-Frucht",
-    "Netsu Netsu no Mi": "Hitze-Frucht",
-    "Kuku Kuku no Mi": "Koch-Frucht",
-    "Kibi Kibi no Mi": "Hirse-Frucht",
-    "Toki Toki no Mi": "Zeit-Frucht",
-    "Juku Juku no Mi": "Reife-Frucht",
-    "Maki Maki no Mi": "Schriftrollen-Frucht",
-    "Wapu Wapu no Mi": "Warp-Frucht",
-    "Riki Riki no Mi": "Stärke-Frucht",
-    "Shiku Shiku no Mi": "Krankheits-Frucht",
-    "Nomi Nomi no Mi": "Gehirn-Frucht",
-    "Shima Shima no Mi": "Insel-Frucht",
-    "Gabu Gabu no Mi": "Glug-Glug-Frucht",
-    "Moku Moku no Mi": "Rauch-Frucht",
-    "Suna Suna no Mi": "Sand-Frucht",
-    "Goro Goro no Mi": "Donner-Frucht",
-    "Hie Hie no Mi": "Gefrier-Frucht",
-    "Yami Yami no Mi": "Finster-Frucht",
-    "Pika Pika no Mi": "Funkel-Frucht",
-    "Magu Magu no Mi": "Magma-Frucht",
-    "Numa Numa no Mi": "Sumpf-Frucht",
-    "Gasu Gasu no Mi": "Gas-Frucht",
-    "Yuki Yuki no Mi": "Schnee-Frucht",
-    "Mori Mori no Mi": "Wald-Frucht"
+const OP_ALIAS_FIGUREN = {
+    "Mr. 5": ["Gem", "Mr 5"],
+    "Miss Valentine": ["Mikita"],
+    "Mr. 3": ["Galdino"],
+    "Bon Curry": ["Bentham", "Bon Clay", "Mr. 2"],
+    "Mr. 1": ["Daz Bonez"],
+    "Miss Merry Christmas": ["Drophy"],
+    "Miss Doublefinger": ["Zala"],
+    "Kuzan": ["Aokiji"],
+    "Borsalino": ["Kizaru"],
+    "Sakazuki": ["Akainu"],
+    "Edward Newgate": ["Whitebeard"],
+    "Marshall D. Teach": ["Blackbeard"],
+    "Trafalgar D. Water Law": ["Law"],
+    "Emporio Ivankov": ["Ivankov"],
+    "Boa Hancock": ["Hancock"],
+    "Gecko Moria": ["Moria"],
+    "Vander Decken IX": ["Vander Decken"],
+    "Kinemon": ["Kin'emon"]
 };
 
-
-// =========================================
-// 5. TEUFELSFRUCHT-ANWENDER
-// =========================================
-
-/*
- * Diese Verbindungen werden im Gesamtkatalog genutzt.
- * Sie sagen NICHT aus, ab welcher Episode ein Anwender
- * eine Frucht besitzt oder verwendet.
- */
-
-const OP_FRUCHT_ANWENDER_NAMEN = {
-    "Gomu Gomu no Mi": ["Monkey D. Luffy"],
-    "Bara Bara no Mi": ["Buggy"],
-    "Sube Sube no Mi": ["Alvida"],
-    "Hana Hana no Mi": ["Nico Robin"],
-    "Mera Mera no Mi": ["Portgas D. Ace", "Sabo"],
-    "Bomu Bomu no Mi": ["Gem", "Mr. 5"],
-    "Kilo Kilo no Mi": ["Mikita", "Miss Valentine"],
-    "Doru Doru no Mi": ["Galdino", "Mr. 3"],
-    "Baku Baku no Mi": ["Wapol"],
-    "Mane Mane no Mi": ["Bentham", "Bon Clay"],
-    "Supa Supa no Mi": ["Daz Bonez", "Mr. 1"],
-    "Toge Toge no Mi": ["Zala", "Miss Doublefinger"],
-    "Ori Ori no Mi": ["Hina"],
-    "Bane Bane no Mi": ["Bellamy"],
-    "Ito Ito no Mi": ["Donquixote Doflamingo"],
-    "Noro Noro no Mi": ["Foxy"],
-    "Doa Doa no Mi": ["Blueno"],
-    "Awa Awa no Mi": ["Kalifa"],
-    "Beri Beri no Mi": ["Very Good"],
-    "Sabi Sabi no Mi": ["Shu"],
-    "Shari Shari no Mi": ["Sharinguru"],
-    "Horo Horo no Mi": ["Perona"],
-    "Yomi Yomi no Mi": ["Brook"],
-    "Kage Kage no Mi": ["Gecko Moria"],
-    "Suke Suke no Mi": ["Absalom", "Shiryu"],
-    "Nikyu Nikyu no Mi": ["Bartholomew Kuma"],
-    "Toshi Toshi no Mi": ["Jewelry Bonney"],
-    "Jiki Jiki no Mi": ["Eustass Kid"],
-    "Ope Ope no Mi": ["Trafalgar D. Water Law"],
-    "Shiro Shiro no Mi": ["Capone Bege"],
-    "Wara Wara no Mi": ["Basil Hawkins"],
-    "Oto Oto no Mi": ["Scratchmen Apoo"],
-    "Mero Mero no Mi": ["Boa Hancock"],
-    "Doku Doku no Mi": ["Magellan"],
-    "Horu Horu no Mi": ["Emporio Ivankov"],
-    "Choki Choki no Mi": ["Inazuma"],
-    "Gura Gura no Mi": ["Edward Newgate", "Marshall D. Teach"],
-    "Kira Kira no Mi": ["Jozu"],
-    "Poke Poke no Mi": ["Blamenco"],
-    "Woshu Woshu no Mi": ["Tsuru"],
-    "Mato Mato no Mi": ["Vander Decken IX"],
-    "Fuku Fuku no Mi": ["Kinemon"],
-    "Hobi Hobi no Mi": ["Sugar"],
-    "Buki Buki no Mi": ["Baby 5"],
-    "Guru Guru no Mi": ["Buffalo"],
-    "Beta Beta no Mi": ["Trebol"],
-    "Zushi Zushi no Mi": ["Issho"],
-    "Bari Bari no Mi": ["Bartolomeo"],
-    "Nui Nui no Mi": ["Leo"],
-    "Giro Giro no Mi": ["Viola"],
-    "Ato Ato no Mi": ["Giolla"],
-    "Jake Jake no Mi": ["Kelly Funk"],
-    "Pamu Pamu no Mi": ["Gladius"],
-    "Sui Sui no Mi": ["Senor Pink"],
-    "Ton Ton no Mi": ["Machvise"],
-    "Hira Hira no Mi": ["Diamante"],
-    "Ishi Ishi no Mi": ["Pica"],
-    "Fude Fude no Mi": ["Kurozumi Kanjuro"],
-    "Nagi Nagi no Mi": ["Donquixote Rosinante"],
-    "Chiyu Chiyu no Mi": ["Mansherry"],
-    "Soru Soru no Mi": ["Charlotte Linlin"],
-    "Mira Mira no Mi": ["Charlotte Brulee"],
-    "Pero Pero no Mi": ["Charlotte Perospero"],
-    "Bisu Bisu no Mi": ["Charlotte Cracker"],
-    "Buku Buku no Mi": ["Charlotte Mont-d'Or"],
-    "Shibo Shibo no Mi": ["Charlotte Smoothie"],
-    "Memo Memo no Mi": ["Charlotte Pudding"],
-    "Mochi Mochi no Mi": ["Charlotte Katakuri"],
-    "Hoya Hoya no Mi": ["Charlotte Daifuku"],
-    "Netsu Netsu no Mi": ["Charlotte Oven"],
-    "Kuku Kuku no Mi": ["Streusen"],
-    "Kobi Kobi no Mi": ["Belo Betty"],
-    "Oshi Oshi no Mi": ["Morley"],
-    "Kibi Kibi no Mi": ["Kurozumi Tama"],
-    "Toki Toki no Mi": ["Kozuki Toki"],
-    "Juku Juku no Mi": ["Shinobu"],
-    "Maki Maki no Mi": ["Raizo"],
-    "Wapu Wapu no Mi": ["Van Augur"],
-    "Riki Riki no Mi": ["Jesus Burgess"],
-    "Shiku Shiku no Mi": ["Doc Q"],
-    "Nomi Nomi no Mi": ["Vegapunk"],
-    "Shima Shima no Mi": ["Avalo Pizarro"],
-    "Gabu Gabu no Mi": ["Vasco Shot"],
-    "Moku Moku no Mi": ["Smoker"],
-    "Suna Suna no Mi": ["Crocodile"],
-    "Goro Goro no Mi": ["Enel"],
-    "Hie Hie no Mi": ["Kuzan"],
-    "Yami Yami no Mi": ["Marshall D. Teach"],
-    "Pika Pika no Mi": ["Borsalino"],
-    "Magu Magu no Mi": ["Sakazuki"],
-    "Numa Numa no Mi": ["Caribou"],
-    "Gasu Gasu no Mi": ["Caesar Clown"],
-    "Yuki Yuki no Mi": ["Monet"],
-    "Mori Mori no Mi": ["Aramaki"],
-
-    // Zoan-Früchte mit bekannten Anwendern
-    "Hito Hito no Mi": ["Tony Tony Chopper"],
-    "Hito Hito no Mi, Model: Nika": ["Monkey D. Luffy"],
-    "Hito Hito no Mi, Model: Daibutsu": ["Sengoku"],
-    "Tori Tori no Mi, Model: Phoenix": ["Marco"],
-    "Tori Tori no Mi, Model: Falcon": ["Pell"],
-    "Uo Uo no Mi, Model: Seiryu": ["Kaido"],
-    "Neko Neko no Mi, Model: Leopard": ["Rob Lucci"],
-    "Ushi Ushi no Mi, Model: Giraffe": ["Kaku"],
-    "Ushi Ushi no Mi, Model: Bison": ["Dalton"],
-    "Inu Inu no Mi, Model: Wolf": ["Jabra"],
-    "Mogu Mogu no Mi": ["Drophy"],
-    "Uma Uma no Mi": ["Pierre"],
-    "Zou Zou no Mi": ["Funkfreed"],
-    "Ryu Ryu no Mi, Model: Allosaurus": ["X Drake"],
-    "Zou Zou no Mi, Model: Mammoth": ["Jack"],
-    "Ryu Ryu no Mi, Model: Spinosaurus": ["Page One"],
-    "Ryu Ryu no Mi, Model: Pteranodon": ["King"],
-    "Ryu Ryu no Mi, Model: Brachiosaurus": ["Queen"],
-    "Ryu Ryu no Mi, Model: Triceratops": ["Sasaki"],
-    "Hebi Hebi no Mi, Model: King Cobra": ["Boa Marigold"],
-    "Hebi Hebi no Mi, Model: Anaconda": ["Boa Sandersonia"],
-    "Inu Inu no Mi, Model: Kyubi no Kitsune": ["Catarina Devon"],
-    "Inu Inu no Mi, Model: Okuchi no Makami": ["Yamato"]
-};
-
-
-// =========================================
-// 6. SPIELDATEN
-// =========================================
-
-let OP_FRUECHTE = [];
-let OP_CHARAKTERE = [];
-
-let opLadePromise = null;
-
-let OP_KATALOG_INFO = {
-    quelle: "Noch nicht geladen",
-    vollstaendig: false
-};
-
-
-// =========================================
-// 7. TEXT- UND DATENFUNKTIONEN
-// =========================================
 
 /**
- * Normalisiert Namen für die Suche.
+ * Vereinheitlicht Schreibweisen für die Namenssuche.
  *
  * @param {string} text - Name
- * @returns {string} Vergleichbarer Name
+ * @returns {string} Vergleichbarer Text
  */
 function opNorm(text) {
+
     return String(text ?? "")
         .toLocaleLowerCase("de-DE")
         .replaceAll("ß", "ss")
@@ -460,538 +885,106 @@ function opNorm(text) {
 }
 
 
-/**
- * Holt den englischen, romanisierten oder japanischen Namen.
- *
- * @param {Object|string} value - API-Namensfeld
- * @returns {string} Anzeigename
- */
-function opName(value) {
-    if (typeof value === "string") return value;
-
-    return value?.en ||
-           value?.romaji ||
-           value?.jp ||
-           "";
-}
-
-
-/**
- * Liest explizite Anime-Episodennummern.
- *
- * Kapitelnummern werden NICHT als Episoden interpretiert.
- *
- * @param {string|number} value - Ersterscheinungsangabe
- * @returns {number|null} Episode oder null
- */
-function opEpisode(value) {
-
-    if (Number.isInteger(value) && value > 0) {
-        return value;
-    }
-
-    if (typeof value !== "string") {
-        return null;
-    }
-
-    const treffer = value.match(
-        /\b(?:episode|ep\.)\s*#?\s*(\d{1,4})\b/i
-    );
-
-    return treffer ? Number(treffer[1]) : null;
-}
+const OP_CHARAKTERE = OP_FIGUREN_GRUNDLAGE.map(
+    ([id, name, en, episode, alias]) => ({
+        id,
+        name,
+        en,
+        episode,
+        alias,
+        arc: null,
+        alter: null,
+        groesse: null,
+        kopfgeld: null,
+        fruchtId: null,
+        bild: null
+    })
+);
 
 
-// =========================================
-// 8. ALLE API-SEITEN LADEN
-// =========================================
+// Weitere Anwender hinzufügen, ohne zukünftige
+// Informationen zu früh freizuschalten.
 
-/**
- * Lädt sämtliche verfügbaren Seiten einer API-Ressource.
- *
- * Vier Seiten werden gleichzeitig angefordert.
- *
- * @param {string} ressource - "characters" oder "devil-fruits"
- * @returns {Promise<Object[]>} Vollständige API-Ergebnisse
- */
-async function opLadeAlleSeiten(ressource) {
+for (const frucht of OP_FRUECHTE) {
 
-    const limit = 100;
-    const ergebnis = new Map();
+    for (const nutzer of frucht.nutzerDaten) {
 
-    let weiter = true;
+        const key = opNorm(nutzer.name);
 
-    for (
-        let start = 1;
-        start <= 160 && weiter;
-        start += 4
-    ) {
-
-        const seiten = await Promise.all(
-
-            [start, start + 1, start + 2, start + 3]
-                .map(async page => {
-
-                    const url =
-                        `${OP_API}/${ressource}` +
-                        `?page=${page}&limit=${limit}`;
-
-                    const response = await fetch(url);
-
-                    if (!response.ok) {
-                        throw new Error(
-                            `${ressource}: HTTP ${response.status}`
-                        );
-                    }
-
-                    const json = await response.json();
-
-                    if (Array.isArray(json)) return json;
-
-                    if (Array.isArray(json.data)) {
-                        return json.data;
-                    }
-
-                    if (Array.isArray(json.results)) {
-                        return json.results;
-                    }
-
-                    return [];
-                })
+        let figur = OP_CHARAKTERE.find(c =>
+            [
+                c.name,
+                c.en,
+                ...(c.alias || [])
+            ].some(n => opNorm(n) === key)
         );
 
-        const vorher = ergebnis.size;
-
-        for (const block of seiten) {
-
-            for (const eintrag of block) {
-
-                if (eintrag?.id != null) {
-                    ergebnis.set(
-                        String(eintrag.id),
-                        eintrag
-                    );
-                }
-            }
-        }
-
-        weiter =
-            seiten.every(block => block.length > 0) &&
-            ergebnis.size > vorher;
-    }
-
-    return [...ergebnis.values()];
-}
-
-
-// =========================================
-// 9. CHARAKTERDATEN VORBEREITEN
-// =========================================
-
-/**
- * Verbindet den Online-Katalog mit unseren bekannten
- * deutschen Namen und Debüt-Episoden.
- *
- * @param {Object[]} roh - API-Charaktere
- * @returns {Object[]} Spielbare Charaktere
- */
-function opErstelleFiguren(roh) {
-
-    const map = new Map();
-
-    for (const zeile of roh) {
-
-        const en = opName(zeile.name);
-
-        if (!en) continue;
-
-        const extra = zeile.extra_data || {};
-
-        const bounties = Array.isArray(zeile.bounties)
-            ? zeile.bounties
-            : [];
-
-        const bounty =
-            bounties.find(b =>
-                b?.is_active &&
-                Number.isFinite(b.amount)
-            ) ||
-            bounties.find(b =>
-                Number.isFinite(b?.amount)
-            );
-
-        map.set(opNorm(en), {
-
-            id: `api:${zeile.id}`,
-
-            name: en,
-            en,
-
-            alias: [
-                zeile.name?.romaji,
-                extra.epithet
-            ].filter(Boolean),
-
-            episode: opEpisode(
-                extra.first_anime_episode ??
-                extra.first_appearance
-            ),
-
-            arc: typeof extra.first_arc === "string"
-                ? extra.first_arc
-                : null,
-
-            alter: Number.isFinite(zeile.age)
-                ? zeile.age
-                : null,
-
-            groesse: Number.isFinite(zeile.height)
-                ? zeile.height
-                : null,
-
-            kopfgeld: Number.isFinite(bounty?.amount)
-                ? bounty.amount
-                : null,
-
-            fruchtId: null,
-            bild: zeile.image_url || null,
-
-            metadatenAktuell: true
-        });
-    }
-
-    // Deutsche Namen, frühe Angaben und bekannte
-    // Anime-Episoden haben Vorrang.
-    for (const kuratiert of OP_GEPRUEFTE_FIGUREN) {
-
-        const key = opNorm(kuratiert.en);
-
-        const gefunden = map.get(key) || {};
-
-        map.set(key, {
-
-            ...gefunden,
-            ...kuratiert,
-
-            alias: [
-                ...new Set([
-                    ...(gefunden.alias || []),
-                    ...(kuratiert.alias || [])
-                ])
-            ],
-
-            kopfgeld: null
-        });
-    }
-
-    return [...map.values()];
-}
-
-
-// =========================================
-// 10. TEUFELSFRÜCHTE VORBEREITEN
-// =========================================
-
-/**
- * Verbindet Online-Früchte, deutsche Namen, Aliasnamen,
- * geprüfte Episoden und bekannte Anwender.
- *
- * @param {Object[]} roh - API-Früchte
- * @param {Object[]} figuren - Geladene Charaktere
- * @returns {Object[]} Spielbare Teufelsfrüchte
- */
-function opErstelleFruechte(roh, figuren) {
-
-    const map = new Map();
-
-    for (const zeile of roh) {
-
-        const ja =
-            zeile.name?.romaji ||
-            zeile.name?.jp ||
-            "";
-
-        const en = opName(zeile.name);
-
-        if (!ja && !en) continue;
-
-        const modell = opName(zeile.model);
-
-        const key =
-            opNorm(ja || en) + ":" + opNorm(modell);
-
-        map.set(key, {
-
-            id: `api:${zeile.id}`,
-
-            de: OP_DEUTSCHE_FRUCHTNAMEN[ja] || null,
-
-            en: modell
-                ? `${en} – ${modell}`
-                : en,
-
-            ja: modell
-                ? `${ja} – ${modell}`
-                : ja,
-
-            alias: [en, ja].filter(Boolean),
-
-            erwaehnung: null,
-            anwendung: null,
-            anwender: [],
-
-            typ: zeile.type || null,
-            bild: zeile.image_url || null,
-
-            katalogEintrag: true
-        });
-    }
-
-    // Separat geprüfte Daten ergänzen
-    for (const frucht of OP_GEPRUEFTE_FRUECHTE) {
-
-        const treffer = [...map.entries()].find(
-            ([, eintrag]) =>
-
-                opNorm(eintrag.ja).startsWith(
-                    opNorm(frucht.ja)
-                ) &&
-
-                !eintrag.ja.includes("–")
-        );
-
-        if (treffer) {
-
-            map.set(treffer[0], {
-
-                ...treffer[1],
-                ...frucht,
-
-                alias: [
-                    ...new Set([
-                        ...(treffer[1].alias || []),
-                        ...(frucht.alias || [])
-                    ])
-                ]
-            });
-
-        } else {
-
-            map.set(`geprueft:${frucht.id}`, {
-
-                ...frucht,
-                typ: null,
+        if (!figur) {
+
+            figur = {
+                id: `figur-${key}`,
+                name: nutzer.name,
+                en: nutzer.name,
+                alias: OP_ALIAS_FIGUREN[nutzer.name] || [],
+                episode: nutzer.ab,
+                arc: null,
+                alter: null,
+                groesse: null,
+                kopfgeld: null,
+                fruchtId: null,
                 bild: null
-            });
+            };
+
+            OP_CHARAKTERE.push(figur);
         }
+
+        nutzer.id = figur.id;
+        frucht.anwender.push(figur.id);
     }
-
-    // Namen/Aliasse zu Charakter-Objekten zuordnen
-    const namenMap = new Map();
-
-    for (const charakter of figuren) {
-
-        const namen = [
-            charakter.name,
-            charakter.en,
-            ...charakter.alias
-        ];
-
-        for (const name of namen) {
-
-            const key = opNorm(name);
-
-            if (key && !namenMap.has(key)) {
-                namenMap.set(key, charakter);
-            }
-        }
-    }
-
-    // Bekannte Frucht-Anwender verknüpfen
-    for (const frucht of map.values()) {
-
-        const eintragKey = opNorm(frucht.ja)
-            .replace("model", "");
-
-        const zuordnungKey = Object.keys(
-            OP_FRUCHT_ANWENDER_NAMEN
-        ).find(key =>
-
-            opNorm(key).replace("model", "") ===
-            eintragKey
-        );
-
-        const namen = zuordnungKey
-            ? OP_FRUCHT_ANWENDER_NAMEN[zuordnungKey]
-            : [];
-
-        const benutzer = namen
-
-            .map(name => namenMap.get(opNorm(name)))
-
-            .filter(Boolean)
-
-            .map(charakter => charakter.id);
-
-        frucht.anwender = [
-            ...new Set([
-                ...frucht.anwender,
-                ...benutzer
-            ])
-        ];
-    }
-
-    return [...map.values()];
 }
 
 
-// =========================================
-// 11. KATALOG EINMALIG LADEN
-// =========================================
+// Anwender-IDs vereinheitlichen.
+
+for (const frucht of OP_FRUECHTE) {
+
+    frucht.anwender = frucht.nutzerDaten.map(
+        n => n.id
+    );
+}
+
+
+const OP_KATALOG_INFO = {
+    quelle: "Lokaler One Piece Wiki-Datensatz",
+    vollstaendig: false,
+    figuren: OP_CHARAKTERE.length,
+    fruechte: OP_FRUECHTE.length
+};
+
 
 /**
- * Lädt alle Charaktere und Früchte.
+ * Gibt den lokalen Katalog zurück.
+ * Es wird kein Internetzugriff durchgeführt.
  *
- * Verwendet bei Netzfehler den geprüften Grundbestand.
- *
- * @returns {Promise<Object>} Geladener Datenbestand
+ * @returns {Promise<Object>} Statischer Wiki-Datensatz
  */
-function ladeOnePieceDaten() {
+async function ladeOnePieceDaten() {
 
-    if (opLadePromise) return opLadePromise;
-
-    opLadePromise = (async () => {
-
-        let rohFiguren = [];
-        let rohFruechte = [];
-
-        let vollstaendig = false;
-
-        // Zuerst Browser-Cache verwenden
-        try {
-
-            const gespeichert = JSON.parse(
-                localStorage.getItem(OP_CACHE_KEY)
-            );
-
-            if (
-                gespeichert &&
-                Date.now() - gespeichert.zeit < OP_CACHE_MS &&
-                Array.isArray(gespeichert.figuren) &&
-                Array.isArray(gespeichert.fruechte)
-            ) {
-
-                rohFiguren = gespeichert.figuren;
-                rohFruechte = gespeichert.fruechte;
-
-                vollstaendig = true;
-            }
-
-        } catch {
-            // Cache ist optional.
-        }
-
-        // Bei fehlendem Cache aus dem Internet laden
-        if (!vollstaendig) {
-
-            try {
-
-                [rohFiguren, rohFruechte] =
-                    await Promise.all([
-
-                        opLadeAlleSeiten("characters"),
-
-                        opLadeAlleSeiten("devil-fruits")
-
-                    ]);
-
-                if (
-                    rohFiguren.length < 100 ||
-                    rohFruechte.length < 20
-                ) {
-
-                    throw new Error(
-                        "Online-Katalog unvollständig"
-                    );
-                }
-
-                vollstaendig = true;
-
-                // Browser-Cache aktualisieren
-                try {
-
-                    localStorage.setItem(
-
-                        OP_CACHE_KEY,
-
-                        JSON.stringify({
-                            zeit: Date.now(),
-                            figuren: rohFiguren,
-                            fruechte: rohFruechte
-                        })
-                    );
-
-                } catch {
-                    // Browser-Speicher eventuell voll.
-                }
-
-            } catch (fehler) {
-
-                console.warn(
-                    "One-Piece-API nicht verfügbar:",
-                    fehler
-                );
-
-                rohFiguren = [];
-                rohFruechte = [];
-            }
-        }
-
-        OP_CHARAKTERE = opErstelleFiguren(
-            rohFiguren
-        );
-
-        OP_FRUECHTE = opErstelleFruechte(
-            rohFruechte,
-            OP_CHARAKTERE
-        );
-
-        OP_KATALOG_INFO = {
-
-            quelle: vollstaendig
-                ? "One Piece API"
-                : "Offline-Grundbestand",
-
-            vollstaendig,
-
-            figuren: OP_CHARAKTERE.length,
-
-            fruechte: OP_FRUECHTE.length
-        };
-
-        return {
-            figuren: OP_CHARAKTERE,
-            fruechte: OP_FRUECHTE,
-            vollstaendig
-        };
-
-    })();
-
-    return opLadePromise;
+    return {
+        figuren: OP_CHARAKTERE,
+        fruechte: OP_FRUECHTE,
+        vollstaendig: false
+    };
 }
 
 
-// =========================================
-// 12. SPOILER-FILTER
-// =========================================
-
 /**
- * Gibt Teufelsfrüchte nach Spoiler-Einstellung zurück.
+ * Filtert Teufelsfrüchte nach Anime-Episode.
  *
- * @param {number} episode - Zuletzt gesehene Episode
- * @param {string} art - "erwaehnung" oder "anwendung"
- * @param {boolean} vollkatalog - Spoilerfilter ausschalten?
- * @returns {Object[]} Freigegebene Früchte
+ * @param {number} episode - Gesehene Folge
+ * @param {string} art - "anwendung" oder "erwaehnung"
+ * @param {boolean} vollkatalog - Episodenfilter umgehen
+ * @returns {Object[]} Freigeschaltete Früchte
  */
 function holeBekannteFruechte(
     episode,
@@ -999,118 +992,103 @@ function holeBekannteFruechte(
     vollkatalog = false
 ) {
 
-    if (vollkatalog) return OP_FRUECHTE;
-
-    if (!["erwaehnung", "anwendung"].includes(art)) {
+    if (
+        !vollkatalog &&
+        !["anwendung", "erwaehnung"].includes(art)
+    ) {
         return [];
     }
 
-    return OP_FRUECHTE.filter(frucht =>
+    return OP_FRUECHTE
 
-        Number.isInteger(frucht[art]) &&
-        frucht[art] <= episode
-    );
+        .filter(frucht =>
+            vollkatalog ||
+            (
+                Number.isInteger(frucht[art]) &&
+                frucht[art] <= episode
+            )
+        )
+
+        // Spätere Anwender nicht vorzeitig zeigen
+        .map(frucht => ({
+            ...frucht,
+
+            anwender: frucht.nutzerDaten
+
+                .filter(n =>
+                    vollkatalog || n.ab <= episode
+                )
+
+                .map(n => n.id)
+        }));
 }
 
 
 /**
- * Liefert Charaktere nach Episodengrenze.
- *
- * Aktuelle API-Attribute werden im sicheren Modus
- * nicht ungeprüft übernommen.
+ * Filtert bekannte Charaktere.
  *
  * @param {number} episode - Episodengrenze
- * @param {boolean} vollkatalog - Spoiler zulassen?
- * @returns {Object[]} Charaktere
+ * @param {boolean} vollkatalog - Spoiler zulassen
+ * @returns {Object[]} Erlaubte Charaktere
  */
 function holeBekannteCharaktere(
     episode,
     vollkatalog = false
 ) {
 
-    if (vollkatalog) return OP_CHARAKTERE;
-
-    return OP_CHARAKTERE
-
-        .filter(charakter =>
-            Number.isInteger(charakter.episode) &&
-            charakter.episode <= episode
+    return OP_CHARAKTERE.filter(c =>
+        vollkatalog ||
+        (
+            Number.isInteger(c.episode) &&
+            c.episode <= episode
         )
-
-        .map(charakter => {
-
-            const kuratiert =
-                OP_GEPRUEFTE_FIGUREN.find(
-                    c => c.id === charakter.id
-                );
-
-            return {
-
-                ...charakter,
-
-                alias: [
-                    ...(kuratiert?.alias || [])
-                ],
-
-                alter: kuratiert?.alter ?? null,
-                groesse: kuratiert?.groesse ?? null,
-
-                kopfgeld: null,
-                bild: null,
-                fruchtId: null
-            };
-        });
-}
-
-
-// =========================================
-// 13. NAMEN UND ALIASSE
-// =========================================
-
-/**
- * Sucht einen Charakter nach Namen oder Alias.
- *
- * @param {Object[]} charaktere - Erlaubte Figuren
- * @param {string} eingabe - Eingegebener Text
- * @returns {Object[]} Passende Charaktere
- */
-function sucheOnePieceCharaktere(charaktere, eingabe) {
-
-    const gesucht = opNorm(eingabe);
-
-    if (!gesucht) return [];
-
-    return charaktere.filter(charakter =>
-
-        [
-            charakter.name,
-            charakter.en,
-            ...(charakter.alias || [])
-        ].some(name => opNorm(name) === gesucht)
     );
 }
 
 
 /**
- * Prüft deutsche, englische, japanische Fruchtnamen
- * und weitere Alias-Bezeichnungen.
+ * Erkennt Charaktere anhand von Namen und Alias.
  *
- * @param {Object} frucht - Teufelsfrucht
- * @param {string} eingabe - Texteingabe
- * @returns {boolean} Passender Fruchtname?
+ * @param {Object[]} charaktere - Erlaubte Figuren
+ * @param {string} eingabe - Name oder Alias
+ * @returns {Object[]} Exakte Treffer
+ */
+function sucheOnePieceCharaktere(
+    charaktere,
+    eingabe
+) {
+
+    const name = opNorm(eingabe);
+
+    if (!name) return [];
+
+    return charaktere.filter(c =>
+        [
+            c.name,
+            c.en,
+            ...(c.alias || [])
+        ].some(n => opNorm(n) === name)
+    );
+}
+
+
+/**
+ * Prüft den Namen einer Teufelsfrucht.
+ *
+ * @param {Object} frucht - Fruchtdaten
+ * @param {string} eingabe - Eingabe
+ * @returns {boolean} Ob die Antwort stimmt
  */
 function istFruchtName(frucht, eingabe) {
 
-    const gesucht = opNorm(eingabe);
+    const name = opNorm(eingabe);
 
-    if (!gesucht) return false;
+    if (!name) return false;
 
     return [
-
         frucht.de,
         frucht.en,
         frucht.ja,
         ...(frucht.alias || [])
-
-    ].some(name => opNorm(name) === gesucht);
+    ].some(n => opNorm(n) === name);
 }
