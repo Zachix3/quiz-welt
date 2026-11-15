@@ -1,7 +1,10 @@
 
-/* =========================================
-   HAUPTPROGRAMM – POKÉMON UND ONE PIECE
-   ========================================= */
+/* =====================================================
+   QUIZ-WELT – HAUPTPROGRAMM
+
+   Pokémon-Modi bleiben unverändert.
+   One Piece nutzt lokale Wiki-Daten ohne Online-API.
+   ===================================================== */
 
 
 // =========================================
@@ -16,13 +19,10 @@ const SEITEN = [
 ];
 
 const MODI_TITEL = {
-
     frei: "Frei",
     reihe: "Reihenfolge",
-
     "de-en": "Deutsch → Englisch",
     "en-de": "Englisch → Deutsch",
-
     typen: "Pokémon-Typen",
     "typ-zufall": "Zufälliger Typ",
     "typ-wahl": "Typ vervollständigen",
@@ -48,45 +48,42 @@ const MODI_TITEL = {
 
 
 // =========================================
-// 2. SPIELEINSTELLUNGEN
+// 2. GLOBALE EINSTELLUNGEN
 // =========================================
 
-// Pokémon
 let ALLE_POKEMON = [];
 
 let MAX_GENERATION = null;
 
 let AUSGEWAEHLTE_GENERATIONEN = new Set();
 
-
-// One Piece
 let OP_EPISODE = null;
 
-let OP_FREIGABE = "erwaehnung";
+
+// Kompatibilität mit der vorhandenen HTML-Datei:
+//
+// "erwaehnung" heißt jetzt im Menü "Fruit Debut".
+// Diese Bezeichnung ist keine namentliche Erwähnung.
+
+let OP_FREIGABE = "anwendung";
 
 let OP_VOLLER_KATALOG = false;
 
 
-// Aktuelle Sitzung
 let AKTIVER_MODUS = null;
-
 let AKTIVE_WELT = null;
 
 const SITZUNGEN = new Map();
 
-
-// Laufende Ladevorgänge
 let pokemonLaden = null;
-
-let onepieceLaden = null;
 
 
 // =========================================
-// 3. NAVIGATION
+// 3. SEITEN ANZEIGEN
 // =========================================
 
 /**
- * Zeigt einen Seitenbereich an.
+ * Zeigt eine Seite an.
  *
  * @param {string} name - Seitenkennung
  * @returns {void}
@@ -102,22 +99,17 @@ function zeigeSeite(name) {
 
     document.getElementById(
         "kopf-hinweis"
-    ).textContent = {
-
+    ).textContent = ({
         welt: "Wähle ein Universum",
-
         pokemon: "Pokémon",
-
         onepiece: "One Piece",
-
         spiel: MODI_TITEL[AKTIVER_MODUS] || "Quiz"
-
-    }[name];
+    })[name];
 }
 
 
 /**
- * Pausiert den derzeitigen Spielmodus.
+ * Pausiert das aktuell geöffnete Spiel.
  *
  * @returns {void}
  */
@@ -134,7 +126,7 @@ function pausiereAktivesSpiel() {
 
 
 /**
- * Beendet gespeicherte Spielrunden einer Spielwelt.
+ * Verwirft gespeicherte Spielrunden einer Welt.
  *
  * @param {string} welt - "pokemon" oder "onepiece"
  * @returns {void}
@@ -143,13 +135,11 @@ function verwerfeSitzungen(welt) {
 
     for (const [schluessel, spiel] of SITZUNGEN) {
 
-        if (!schluessel.startsWith(`${welt}:`)) {
-            continue;
+        if (schluessel.startsWith(`${welt}:`)) {
+
+            spiel.dispose();
+            SITZUNGEN.delete(schluessel);
         }
-
-        spiel.dispose();
-
-        SITZUNGEN.delete(schluessel);
     }
 }
 
@@ -159,7 +149,7 @@ function verwerfeSitzungen(welt) {
 // =========================================
 
 /**
- * Erstellt die Generations-Buttons.
+ * Erstellt die Generations-Buttons für Pokémon.
  *
  * @returns {void}
  */
@@ -193,17 +183,17 @@ function zeichneGenerationen() {
         button.textContent =
             `Gen ${gen} (${anzahl})`;
 
-        const ausgewaehlt =
+        const aktiv =
             AUSGEWAEHLTE_GENERATIONEN.has(gen);
 
         button.classList.toggle(
             "aktiv",
-            ausgewaehlt
+            aktiv
         );
 
         button.setAttribute(
             "aria-pressed",
-            String(ausgewaehlt)
+            String(aktiv)
         );
 
         button.addEventListener("click", () => {
@@ -229,7 +219,7 @@ function zeichneGenerationen() {
 
 
 /**
- * Aktualisiert die Pokémon-Anzahl und Modusauswahl.
+ * Aktualisiert die Pokémon-Anzahl im Menü.
  *
  * @returns {void}
  */
@@ -251,13 +241,13 @@ function aktualisiereUmfang() {
         "umfang-info"
     ).textContent = ok
 
-        ? `${pool.length} Pokémon: Gen ` +
+        ? `${pool.length} Pokémon aus Generation ` +
           [...AUSGEWAEHLTE_GENERATIONEN]
               .sort((a, b) => a - b)
               .join(" + ") +
-          `; Typwissen bis Gen ${MAX_GENERATION}.`
+          `. Typwissen bis Gen ${MAX_GENERATION}.`
 
-        : "Wähle mindestens eine Pokémon-Generation.";
+        : "Wähle mindestens eine Generation aus.";
 }
 
 
@@ -272,7 +262,9 @@ async function oeffnePokemonBereich() {
 
     if (ALLE_POKEMON.length) return;
 
-    if (pokemonLaden) return pokemonLaden;
+    if (pokemonLaden) {
+        return pokemonLaden;
+    }
 
     const status = document.getElementById(
         "lade-status"
@@ -325,7 +317,8 @@ async function oeffnePokemonBereich() {
 
             if (MAX_GENERATION) {
 
-                select.value = String(MAX_GENERATION);
+                select.value =
+                    String(MAX_GENERATION);
             }
 
             zeichneGenerationen();
@@ -348,12 +341,31 @@ async function oeffnePokemonBereich() {
 
 
 // =========================================
-// 5. ONE PIECE – GESAMTKATALOG-SCHALTER
+// 5. ONE-PIECE-FILTER BESCHRIFTEN
 // =========================================
 
 /**
- * Fügt im bestehenden One-Piece-Menü einen
- * Spoiler-Schalter hinzu.
+ * Gibt den Namen der aktuellen Wiki-Regel zurück.
+ *
+ * @returns {string} Beschreibung
+ */
+function opRegelText() {
+
+    if (OP_VOLLER_KATALOG) {
+        return "Alle lokalen Wiki-Einträge (Spoiler)";
+    }
+
+    return OP_FREIGABE === "anwendung"
+
+        ? "Usage Debut – erste Nutzung"
+
+        : "Fruit Debut – Frucht erstmals gezeigt";
+}
+
+
+/**
+ * Beschriftet die bisherigen Radio-Buttons neu
+ * und ergänzt den Schalter für den Gesamtkatalog.
  *
  * @returns {void}
  */
@@ -363,15 +375,89 @@ function erstelleOPKatalogSchalter() {
         "#seite-onepiece .einstellungen"
     );
 
+    if (!feld) return;
+
+
+    // -------------------------------------
+    // FRUIT DEBUT
+    // -------------------------------------
+
+    const fruchtRadio = document.querySelector(
+        'input[name="op-freigabe"][value="erwaehnung"]'
+    );
+
+    if (fruchtRadio) {
+
+        const label = fruchtRadio.closest("label");
+
+        if (label) {
+
+            label.replaceChildren(
+
+                fruchtRadio,
+
+                document.createTextNode(
+                    " Fruit Debut – Frucht erstmals gezeigt"
+                )
+            );
+        }
+    }
+
+
+    // -------------------------------------
+    // USAGE DEBUT
+    // -------------------------------------
+
+    const nutzungRadio = document.querySelector(
+        'input[name="op-freigabe"][value="anwendung"]'
+    );
+
+    if (nutzungRadio) {
+
+        const label = nutzungRadio.closest("label");
+
+        if (label) {
+
+            label.replaceChildren(
+
+                nutzungRadio,
+
+                document.createTextNode(
+                    " Usage Debut – Fähigkeit erstmals genutzt"
+                )
+            );
+        }
+    }
+
+
+    // Schalter nur einmal erstellen
     if (
-        !feld ||
         document.getElementById("op-vollkatalog")
     ) {
         return;
     }
 
-    const label = document.createElement("label");
 
+    // -------------------------------------
+    // ERKLÄRUNG
+    // -------------------------------------
+
+    const erklaerung = document.createElement("p");
+    erklaerung.className = "hinweis";
+
+    erklaerung.textContent =
+
+        "Fruit Debut ist nicht die erste Namens-Erwähnung. " +
+        "Viele Früchte wurden erstmals nur in Magazinen " +
+        "oder wesentlich später gezeigt. Für Folge 650 " +
+        "liefert Usage Debut wesentlich mehr Fragen.";
+
+
+    // -------------------------------------
+    // GESAMTKATALOG-SCHALTER
+    // -------------------------------------
+
+    const label = document.createElement("label");
     label.className = "hinweis";
 
     const checkbox = document.createElement("input");
@@ -385,44 +471,30 @@ function erstelleOPKatalogSchalter() {
         checkbox,
 
         document.createTextNode(
-            " Vollständigen Datenkatalog verwenden " +
-            "(ACHTUNG: ungefilterte Spoiler!)"
+            " Alle lokal erfassten Früchte ohne Episodenfilter " +
+            "verwenden (Spoiler!)"
         )
     );
 
 
-    // Warnhinweis
-    const warnung = document.createElement("p");
-
-    warnung.id = "op-katalog-warnung";
-    warnung.className = "hinweis";
-
-    warnung.textContent =
-        "Aus: Nur Figuren/Früchte mit " +
-        "nachgewiesener Anime-Episode.";
-
-
-    // Vor dem Speichern-Button einfügen
+    // Elemente vor dem Speichern-Button einfügen
     const button = document.getElementById(
         "episode-speichern"
     );
 
+    feld.insertBefore(erklaerung, button);
     feld.insertBefore(label, button);
-    feld.insertBefore(warnung, button);
 
 
-    // Schalteränderung
+    // Schalteränderung übernehmen
     checkbox.addEventListener("change", () => {
 
-        warnung.textContent = checkbox.checked
+        const episodentext =
+            document.getElementById(
+                "onepiece-episode"
+            ).value;
 
-            ? "An: Aktuelle Kopfgelder, spätere Figuren, " +
-              "Fruchtnamen und Bilder können die Handlung spoilern."
-
-            : "Aus: Nur Figuren/Früchte mit " +
-              "nachgewiesener Anime-Episode.";
-
-        if (Number.isInteger(OP_EPISODE)) {
+        if (episodentext) {
 
             speichereOnePieceEinstellungen();
         }
@@ -431,41 +503,32 @@ function erstelleOPKatalogSchalter() {
 
 
 // =========================================
-// 6. ONE PIECE – MENÜSTATUS
+// 6. ONE-PIECE-MENÜ AKTUALISIEREN
 // =========================================
 
 /**
- * Zeigt die für den Episodenstand freigegebenen
- * Figuren und Teufelsfrüchte an.
+ * Zeigt die Anzahl der verfügbaren Früchte und Figuren.
  *
  * @returns {void}
  */
 function aktualisiereOnePieceMenue() {
 
-    const gueltig =
+    const ok =
         Number.isInteger(OP_EPISODE) &&
         OP_EPISODE >= 1;
 
     document.getElementById(
         "onepiece-modi"
-    ).hidden = !gueltig || !OP_FRUECHTE.length;
+    ).hidden = !ok;
 
     const status = document.getElementById(
         "episode-status"
     );
 
-    if (!gueltig) {
+    if (!ok) {
 
         status.textContent =
-            "Bitte zuerst eine gültige Episode eingeben.";
-
-        return;
-    }
-
-    if (!OP_FRUECHTE.length) {
-
-        status.textContent =
-            "One-Piece-Katalog wird geladen …";
+            "Bitte zuerst deine Anime-Episode eingeben.";
 
         return;
     }
@@ -481,97 +544,53 @@ function aktualisiereOnePieceMenue() {
         OP_VOLLER_KATALOG
     );
 
-    const regel = OP_VOLLER_KATALOG
-
-        ? "GESAMTKATALOG MIT SPOILERN"
-
-        : `Erste ${OP_FREIGABE}`;
-
     status.textContent =
 
-        `Episode ${OP_EPISODE} · ${regel}` +
+        `Episode ${OP_EPISODE} · ${opRegelText()} · ` +
 
-        ` · ${figuren.length} Figuren` +
+        `${fruechte.length} Früchte · ` +
+        `${figuren.length} Charaktere · ` +
 
-        ` / ${fruechte.length} Früchte` +
-
-        ` · ${OP_KATALOG_INFO.quelle}.`;
+        OP_KATALOG_INFO.quelle;
 }
 
 
 // =========================================
-// 7. ONE PIECE – DATEN LADEN
+// 7. ONE-PIECE-MENÜ ÖFFNEN
 // =========================================
 
 /**
- * Lädt den großen One-Piece-Katalog beim Öffnen
- * des One-Piece-Bereichs.
+ * Öffnet One Piece ohne API-Download.
  *
- * @returns {Promise<void>}
+ * @returns {void}
  */
-async function oeffneOnePieceBereich() {
+function oeffneOnePieceBereich() {
 
     zeigeSeite("onepiece");
 
-    if (OP_FRUECHTE.length) {
-
-        aktualisiereOnePieceMenue();
-
-        return;
-    }
-
-    if (onepieceLaden) return onepieceLaden;
-
-    const status = document.getElementById(
-        "episode-status"
-    );
-
-    status.textContent =
-        "Lade Charaktere und Teufelsfrüchte " +
-        "aus dem Online-Katalog …";
-
-    onepieceLaden = ladeOnePieceDaten()
-
-        .then(() => {
-
-            aktualisiereOnePieceMenue();
-        })
-
-        .catch(fehler => {
-
-            status.textContent =
-                "One-Piece-Katalog konnte nicht geladen werden: " +
-                fehler.message;
-        })
-
-        .finally(() => {
-
-            onepieceLaden = null;
-        });
-
-    return onepieceLaden;
+    aktualisiereOnePieceMenue();
 }
 
 
 // =========================================
-// 8. ONE PIECE – EINSTELLUNGEN SPEICHERN
+// 8. ONE-PIECE-EINSTELLUNGEN SPEICHERN
 // =========================================
 
 /**
- * Speichert Episode, Freigabe und Gesamtkatalogmodus.
+ * Speichert Episodenstand, Regel und Gesamtkatalogmodus.
  *
  * @returns {void}
  */
 function speichereOnePieceEinstellungen() {
 
-    const feld = document.getElementById(
+    const eingabe = document.getElementById(
         "onepiece-episode"
     );
 
-    const episode = Number(feld.value);
+    const episode = Number(eingabe.value);
 
     if (
-        !feld.value ||
+        !eingabe.value ||
         !Number.isInteger(episode) ||
         episode < 1
     ) {
@@ -579,25 +598,25 @@ function speichereOnePieceEinstellungen() {
         document.getElementById(
             "episode-status"
         ).textContent =
-            "Bitte gültige Episode eingeben.";
+            "Bitte eine gültige Episodennummer eingeben.";
 
         return;
     }
 
     const art = document.querySelector(
         'input[name="op-freigabe"]:checked'
-    )?.value || "erwaehnung";
+    )?.value || "anwendung";
 
     const voll = document.getElementById(
         "op-vollkatalog"
     )?.checked ?? false;
 
-    const geaendert =
+    const veraendert =
         episode !== OP_EPISODE ||
         art !== OP_FREIGABE ||
         voll !== OP_VOLLER_KATALOG;
 
-    if (geaendert) {
+    if (veraendert) {
 
         verwerfeSitzungen("onepiece");
     }
@@ -607,7 +626,7 @@ function speichereOnePieceEinstellungen() {
     OP_VOLLER_KATALOG = voll;
 
 
-    // Speicherung im Browser
+    // Im Browser speichern
     try {
 
         localStorage.setItem(
@@ -622,7 +641,8 @@ function speichereOnePieceEinstellungen() {
         );
 
     } catch {
-        // Auch ohne Browser-Speicher spielbar.
+
+        // Lokaler Speicher ist optional.
     }
 
     aktualisiereOnePieceMenue();
@@ -630,11 +650,11 @@ function speichereOnePieceEinstellungen() {
 
 
 // =========================================
-// 9. ONE PIECE – EINSTELLUNGEN WIEDERHERSTELLEN
+// 9. EINSTELLUNGEN WIEDERHERSTELLEN
 // =========================================
 
 /**
- * Lädt den zuletzt gespeicherten Episodenstand.
+ * Lädt die zuletzt gespeicherten Einstellungen.
  *
  * @returns {void}
  */
@@ -656,9 +676,9 @@ function ladeOnePieceEinstellungen() {
             OP_EPISODE = daten.episode;
 
             OP_FREIGABE =
-                daten.freigabe === "anwendung"
-                    ? "anwendung"
-                    : "erwaehnung";
+                daten.freigabe === "erwaehnung"
+                    ? "erwaehnung"
+                    : "anwendung";
 
             OP_VOLLER_KATALOG =
                 daten.vollerKatalog === true;
@@ -666,40 +686,39 @@ function ladeOnePieceEinstellungen() {
             document.getElementById(
                 "onepiece-episode"
             ).value = String(OP_EPISODE);
-
-            const radio = document.querySelector(
-
-                `input[name="op-freigabe"]` +
-                `[value="${OP_FREIGABE}"]`
-            );
-
-            if (radio) {
-                radio.checked = true;
-            }
         }
 
     } catch {
-        // Kein vorhandener Speicherstand.
+
+        // Noch nichts gespeichert.
     }
 
+
+    // Labels und Schalter aufbauen
     erstelleOPKatalogSchalter();
 
-    const checkbox = document.getElementById(
+
+    // Gespeicherte Freigaberegel auswählen
+    const radio = document.querySelector(
+
+        `input[name="op-freigabe"]` +
+        `[value="${OP_FREIGABE}"]`
+    );
+
+    if (radio) {
+
+        radio.checked = true;
+    }
+
+
+    // Gesamtkatalog-Schalter setzen
+    const check = document.getElementById(
         "op-vollkatalog"
     );
 
-    if (checkbox) {
+    if (check) {
 
-        checkbox.checked = OP_VOLLER_KATALOG;
-
-        document.getElementById(
-            "op-katalog-warnung"
-        ).textContent = OP_VOLLER_KATALOG
-
-            ? "An: Aktuelle Figuren, Bilder, Kopfgelder " +
-              "und Früchte können Spoiler enthalten."
-
-            : "Aus: Nur Inhalte mit belegter Anime-Episode.";
+        check.checked = OP_VOLLER_KATALOG;
     }
 
     aktualisiereOnePieceMenue();
@@ -711,7 +730,7 @@ function ladeOnePieceEinstellungen() {
 // =========================================
 
 /**
- * Startet einen Pokémon- oder One-Piece-Spielmodus.
+ * Öffnet einen Pokémon- oder One-Piece-Modus.
  *
  * @param {string} modus - Spielmodus-ID
  * @param {string} welt - "pokemon" oder "onepiece"
@@ -725,7 +744,7 @@ function oeffneModus(modus, welt = "pokemon") {
         welt === "pokemon" &&
         (
             !MAX_GENERATION ||
-            !AUSGEWAEHLTE_GENERATIONEN.size
+            AUSGEWAEHLTE_GENERATIONEN.size === 0
         )
     ) {
         return;
@@ -733,14 +752,13 @@ function oeffneModus(modus, welt = "pokemon") {
 
     if (
         welt === "onepiece" &&
-        (
-            !OP_EPISODE ||
-            !OP_FRUECHTE.length
-        )
+        !OP_EPISODE
     ) {
         return;
     }
 
+
+    // Aktuelle Sitzung pausieren
     pausiereAktivesSpiel();
 
     AKTIVER_MODUS = modus;
@@ -748,6 +766,8 @@ function oeffneModus(modus, welt = "pokemon") {
 
     const schluessel = `${welt}:${modus}`;
 
+
+    // Spieltitel setzen
     document.getElementById(
         "spiel-titel"
     ).textContent = MODI_TITEL[modus];
@@ -756,27 +776,23 @@ function oeffneModus(modus, welt = "pokemon") {
     // Übungsumfang anzeigen
     document.getElementById(
         "spiel-umfang"
-    ).textContent = welt === "pokemon"
+    ).textContent =
 
-        ? `Gen ` +
-          [...AUSGEWAEHLTE_GENERATIONEN]
-              .sort((a, b) => a - b)
-              .join(" + ") +
-          ` · Typwissen bis Gen ${MAX_GENERATION}`
+        welt === "pokemon"
 
-        : `One Piece · Episode ${OP_EPISODE} · ` +
-          (
-              OP_VOLLER_KATALOG
+            ? `Generation ` +
+              [...AUSGEWAEHLTE_GENERATIONEN]
+                  .sort((a, b) => a - b)
+                  .join(" + ") +
+              ` · Typwissen bis Gen ${MAX_GENERATION}`
 
-                  ? "VOLLER KATALOG / SPOILER"
-
-                  : `Erste ${OP_FREIGABE}`
-          );
+            : `One Piece · Episode ${OP_EPISODE}` +
+              ` · ${opRegelText()}`;
 
 
-    // -------------------------------------
-    // NEUE SPIELSITZUNG
-    // -------------------------------------
+    // =====================================
+    // NEUE SITZUNG ERSTELLEN
+    // =====================================
 
     if (!SITZUNGEN.has(schluessel)) {
 
@@ -784,7 +800,12 @@ function oeffneModus(modus, welt = "pokemon") {
             "spiel-timer"
         );
 
-        let spiel = null;
+        let sitzung;
+
+
+        // ---------------------------------
+        // POKÉMON
+        // ---------------------------------
 
         if (welt === "pokemon") {
 
@@ -799,7 +820,7 @@ function oeffneModus(modus, welt = "pokemon") {
                 timerAnzeige
             };
 
-            const fabrik = {
+            const fabriken = {
 
                 frei: () =>
                     erstellePokedexModus(kontext, false),
@@ -826,27 +847,23 @@ function oeffneModus(modus, welt = "pokemon") {
                     erstellePokemonVergleich(kontext)
             };
 
-            if (fabrik[modus]) {
+            sitzung = fabriken[modus]
 
-                spiel = fabrik[modus]();
+                ? fabriken[modus]()
 
-            } else if (
-
-                modus.startsWith("attacke-") ||
-                modus.startsWith("pokemon-attacken-")
-
-            ) {
-
-                spiel = erstelleAttackenModus(
+                : erstelleAttackenModus(
                     kontext,
                     modus
                 );
-            }
+
+
+        // ---------------------------------
+        // ONE PIECE
+        // ---------------------------------
 
         } else {
 
-            // One-Piece-Spiel erstellen
-            spiel = erstelleOnePieceSpiel(
+            sitzung = erstelleOnePieceSpiel(
 
                 {
                     episode: OP_EPISODE,
@@ -861,20 +878,22 @@ function oeffneModus(modus, welt = "pokemon") {
             );
         }
 
-        if (!spiel) return;
+        if (!sitzung) return;
 
-        SITZUNGEN.set(schluessel, spiel);
+        SITZUNGEN.set(
+            schluessel,
+            sitzung
+        );
     }
 
 
-    // -------------------------------------
-    // SPIEL ANZEIGEN
-    // -------------------------------------
+    // =====================================
+    // SITZUNG ANZEIGEN
+    // =====================================
 
     document.getElementById(
         "spiel-inhalt"
     ).replaceChildren(
-
         SITZUNGEN.get(schluessel).root
     );
 
@@ -885,11 +904,11 @@ function oeffneModus(modus, welt = "pokemon") {
 
 
 // =========================================
-// 11. ZURÜCK ZUM MENÜ
+// 11. ZUM SPIELMENÜ ZURÜCK
 // =========================================
 
 /**
- * Öffnet das Menü der zuletzt gespielten Welt.
+ * Kehrt zum Pokémon- oder One-Piece-Menü zurück.
  *
  * @returns {void}
  */
@@ -899,12 +918,14 @@ function zurueckZumMenue() {
 
     AKTIVER_MODUS = null;
 
-    zeigeSeite(AKTIVE_WELT || "welt");
+    zeigeSeite(
+        AKTIVE_WELT || "welt"
+    );
 }
 
 
 /**
- * Öffnet die erste Startseite.
+ * Kehrt zur ersten Startseite zurück.
  *
  * @returns {void}
  */
@@ -923,7 +944,8 @@ function zurQuizWelt() {
 // 12. BUTTONS VERBINDEN
 // =========================================
 
-// Startseite
+
+// Startseiten
 document.getElementById(
     "welt-pokemon"
 ).addEventListener(
@@ -939,27 +961,20 @@ document.getElementById(
 );
 
 
-// Zurück-Navigation
-document.getElementById(
-    "zur-welt"
-).addEventListener(
-    "click",
-    zurQuizWelt
-);
-
-document.getElementById(
-    "pokemon-zurueck"
-).addEventListener(
-    "click",
-    zurQuizWelt
-);
-
-document.getElementById(
+// Zurück-Buttons
+for (const id of [
+    "zur-welt",
+    "pokemon-zurueck",
     "onepiece-zurueck"
-).addEventListener(
-    "click",
-    zurQuizWelt
-);
+]) {
+
+    document.getElementById(
+        id
+    ).addEventListener(
+        "click",
+        zurQuizWelt
+    );
+}
 
 document.getElementById(
     "spiel-zurueck"
@@ -970,7 +985,7 @@ document.getElementById(
 
 
 // =========================================
-// 13. POKÉMON-GENERATION AUSWÄHLEN
+// 13. POKÉMON-GENERATION
 // =========================================
 
 document.getElementById(
@@ -978,11 +993,15 @@ document.getElementById(
 ).addEventListener("change", event => {
 
     MAX_GENERATION = event.target.value
+
         ? Number(event.target.value)
+
         : null;
 
     AUSGEWAEHLTE_GENERATIONEN = MAX_GENERATION
+
         ? new Set([MAX_GENERATION])
+
         : new Set();
 
     verwerfeSitzungen("pokemon");
